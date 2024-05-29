@@ -11,24 +11,31 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
+import coil.compose.rememberAsyncImagePainter
 import drp.screentime.ui.theme.ScreenTimeTheme
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -65,20 +72,37 @@ fun UsageStatsScreen(modifier: Modifier = Modifier) {
             }
         } else {
             usageStatsList.forEach { usageStat ->
-                UsageStatItem(usageStat = usageStat)
+                UsageStatItem(usageStat)
             }
         }
     }
 }
 
 @Composable
+fun AppIcon(packageName: String) {
+    val context = LocalContext.current
+    val icon = context.packageManager.getApplicationIcon(packageName)
+    val appName = getAppName(context, packageName)
+    Image(
+        painter = rememberAsyncImagePainter(icon.toBitmap()),
+        contentDescription = "Icon for $appName",
+        modifier = Modifier
+            .size(48.dp)
+            .padding(8.dp)
+    )
+}
+
+@Composable
 fun UsageStatItem(usageStat: UsageStats) {
     val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
     Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(
-            text = getAppName(LocalContext.current, usageStat.packageName),
-            style = MaterialTheme.typography.headlineSmall
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AppIcon(usageStat.packageName)
+            Text(
+                text = getAppName(LocalContext.current, usageStat.packageName),
+                fontWeight = FontWeight.Bold,
+            )
+        }
         Text(text = "Last time used: ${formatter.format(Date(usageStat.lastTimeUsed))}")
         Text(text = "Total time in foreground: ${usageStat.totalTimeInForeground / 1000} seconds")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -92,6 +116,7 @@ fun UsageStatItem(usageStat: UsageStats) {
     }
 }
 
+
 fun getAppName(context: Context, packageName: String): String {
     return try {
         context.packageManager.getApplicationInfo(packageName, 0).loadLabel(context.packageManager)
@@ -103,10 +128,19 @@ fun getAppName(context: Context, packageName: String): String {
 
 fun getUsageStats(usageStatsManager: UsageStatsManager): List<UsageStats> {
     val currentTime = System.currentTimeMillis()
-    val startTime = currentTime - 1000 * 60 * 60 * 24 // past 24 hours
+
+    // Get the start of the current day (midnight)
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    val startTime = calendar.timeInMillis
+
     return usageStatsManager.queryUsageStats(
         UsageStatsManager.INTERVAL_DAILY, startTime, currentTime
-    ).filter { it.totalTimeInForeground > 0 }
+    ).sortedByDescending { it.totalTimeInForeground }
+        .dropLastWhile { it.totalTimeInForeground <= 0 }
 }
 
 fun openUsageAccessSettings(context: Context) {
