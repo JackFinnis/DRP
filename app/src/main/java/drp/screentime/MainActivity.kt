@@ -34,8 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.rememberAsyncImagePainter
 import drp.screentime.ui.theme.ScreenTimeTheme
+import drp.screentime.usage.UsageStatsProcessor
+import drp.screentime.util.getAppName
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -58,7 +59,8 @@ fun UsageStatsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val usageStatsManager =
         context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    val usageStatsList by remember { mutableStateOf(getUsageStats(usageStatsManager)) }
+    val usageStats = UsageStatsProcessor(context.packageManager, usageStatsManager)
+    val usageStatsList by remember { mutableStateOf(usageStats.getUsageStats()) }
 
     Column(
         modifier = modifier
@@ -80,9 +82,9 @@ fun UsageStatsScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun AppIcon(packageName: String) {
-    val context = LocalContext.current
-    val icon = context.packageManager.getApplicationIcon(packageName)
-    val appName = getAppName(context, packageName)
+    val packageManager = LocalContext.current.packageManager
+    val icon = packageManager.getApplicationIcon(packageName)
+    val appName = getAppName(packageManager, packageName)
     Image(
         painter = rememberAsyncImagePainter(icon.toBitmap()),
         contentDescription = "Icon for $appName",
@@ -99,7 +101,7 @@ fun UsageStatItem(usageStat: UsageStats) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppIcon(usageStat.packageName)
             Text(
-                text = getAppName(LocalContext.current, usageStat.packageName),
+                text = getAppName(LocalContext.current.packageManager, usageStat.packageName),
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -116,32 +118,6 @@ fun UsageStatItem(usageStat: UsageStats) {
     }
 }
 
-
-fun getAppName(context: Context, packageName: String): String {
-    return try {
-        context.packageManager.getApplicationInfo(packageName, 0).loadLabel(context.packageManager)
-            .toString()
-    } catch (e: Exception) {
-        packageName
-    }
-}
-
-fun getUsageStats(usageStatsManager: UsageStatsManager): List<UsageStats> {
-    val currentTime = System.currentTimeMillis()
-
-    // Get the start of the current day (midnight)
-    val calendar = Calendar.getInstance()
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
-    val startTime = calendar.timeInMillis
-
-    return usageStatsManager.queryUsageStats(
-        UsageStatsManager.INTERVAL_DAILY, startTime, currentTime
-    ).sortedByDescending { it.totalTimeInForeground }
-        .dropLastWhile { it.totalTimeInForeground <= 0 }
-}
 
 fun openUsageAccessSettings(context: Context) {
     val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
