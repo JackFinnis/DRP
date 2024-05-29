@@ -12,8 +12,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,16 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import coil.compose.rememberAsyncImagePainter
 import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.getAppName
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +59,7 @@ fun UsageStatsScreen(modifier: Modifier = Modifier) {
     val usageStatsManager =
         context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
     val usageStats = UsageStatsProcessor(context.packageManager, usageStatsManager)
-    val usageStatsList by remember { mutableStateOf(usageStats.getUsageStats()) }
+    val usageStatsList by remember { mutableStateOf(usageStats.getUsageStatsSorted()) }
 
     Column(
         modifier = modifier
@@ -84,36 +83,28 @@ fun UsageStatsScreen(modifier: Modifier = Modifier) {
 fun AppIcon(packageName: String) {
     val packageManager = LocalContext.current.packageManager
     val icon = packageManager.getApplicationIcon(packageName)
-    val appName = getAppName(packageManager, packageName)
+    val appName = packageManager.getAppName(packageName)
     Image(
         painter = rememberAsyncImagePainter(icon.toBitmap()),
         contentDescription = "Icon for $appName",
-        modifier = Modifier
-            .size(48.dp)
-            .padding(8.dp)
+        modifier = Modifier.size(36.dp)
     )
 }
 
 @Composable
 fun UsageStatItem(usageStat: UsageStats) {
-    val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+    val usage =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) usageStat.totalTimeVisible / 1000
+        else usageStat.totalTimeInForeground / 1000
+    val pm = LocalContext.current.packageManager
     Column(modifier = Modifier.padding(bottom = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppIcon(usageStat.packageName)
-            Text(
-                text = getAppName(LocalContext.current.packageManager, usageStat.packageName),
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Text(text = "Last time used: ${formatter.format(Date(usageStat.lastTimeUsed))}")
-        Text(text = "Total time in foreground: ${usageStat.totalTimeInForeground / 1000} seconds")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            Text(text = "Last time visible: ${formatter.format(Date(usageStat.lastTimeVisible))}")
-            Text(text = "Total time visible: ${usageStat.totalTimeVisible / 1000} seconds")
-            if (usageStat.lastTimeForegroundServiceUsed > 0) {
-                Text(text = "Last time service used: ${formatter.format(Date(usageStat.lastTimeForegroundServiceUsed))}")
-                Text(text = "Total time service used: ${usageStat.totalTimeForegroundServiceUsed / 1000} seconds")
+            Box(modifier = Modifier.padding(end = 16.dp)) {
+                AppIcon(usageStat.packageName)
             }
+            Text(text = pm.getAppName(usageStat.packageName).trim())
+            Spacer(Modifier.weight(1f).fillMaxHeight())
+            Text(text = "${usage}s")
         }
     }
 }

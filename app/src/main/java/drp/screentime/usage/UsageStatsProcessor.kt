@@ -13,7 +13,7 @@ class UsageStatsProcessor(
     private val pm: PackageManager, private val usageStatsManager: UsageStatsManager
 ) {
 
-    private val hiddenPackages = setOf("drp.screentime", getHomeScreenLauncher(pm))
+    private val hiddenPackages = setOf("drp.screentime", pm.getHomeScreenLauncher())
 
     /** Get the usage stats for the given day.
      * @param day The day to get the usage stats for. Defaults to today.
@@ -25,7 +25,11 @@ class UsageStatsProcessor(
 
         return usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY, startTime, endTime
-        ).filter { it.totalTimeInForeground > 0 }.filterNot { isSystemApp(pm, it.packageName) }
+        ).filter { it.totalTimeInForeground > 0 }.filterNot { pm.isSystemApp(it.packageName) }
             .filterNot { hiddenPackages.contains(it.packageName) }
+    }
+
+    fun getUsageStatsSorted(day: Date = Date()): List<UsageStats> {
+        return getUsageStats(day).sortedByDescending { it.totalTimeInForeground }
     }
 }

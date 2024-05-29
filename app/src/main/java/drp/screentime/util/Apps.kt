@@ -2,29 +2,35 @@ package drp.screentime.util
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 
-fun getAppName(packageManager: PackageManager, packageName: String): String {
-    return try {
-        packageManager.getApplicationInfo(packageName, 0).loadLabel(packageManager)
-            .toString()
-    } catch (e: Exception) {
-        packageName
-    }
+fun PackageManager.getAppName(packageName: String): String =
+    this.getApplicationInfo(packageName, 0).loadLabel(this).toString()
+
+fun PackageManager.isSystemApp(packageName: String): Boolean {
+    val sysSig = getAppSignatureHash("android")
+    val appSig = getAppSignatureHash(packageName)
+    return sysSig == appSig
 }
 
-fun isSystemApp(packageManager: PackageManager, packageName: String): Boolean {
-    return try {
-        val appInfo = packageManager.getApplicationInfo(packageName, 0)
-        appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0
-    } catch (e: Exception) {
-        false
-    }
-}
-
-fun getHomeScreenLauncher(packageManager: PackageManager): String {
+fun PackageManager.getHomeScreenLauncher(): String {
     val intent = Intent(Intent.ACTION_MAIN)
     intent.addCategory(Intent.CATEGORY_HOME)
-    val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+    val resolveInfo = this.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
     return resolveInfo?.activityInfo?.packageName ?: ""
+}
+
+fun PackageManager.getAppSignatureHash(packageName: String): Int {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val sig = this.getPackageInfo(
+            packageName, PackageManager.GET_SIGNING_CERTIFICATES
+        ).signingInfo
+        if (sig.hasMultipleSigners()) sig.apkContentsSigners.contentDeepHashCode()
+        else sig.signingCertificateHistory.contentDeepHashCode()
+    } else {
+        @Suppress("DEPRECATION") this.getPackageInfo(
+            packageName, PackageManager.GET_SIGNATURES
+        ).signatures.contentDeepHashCode()
+    }
 }
 
