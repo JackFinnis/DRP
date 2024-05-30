@@ -19,6 +19,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,26 +44,36 @@ fun UserCompetitionsScreen(
     var competitions by remember { mutableStateOf<List<Competition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    val pullRefreshState = rememberPullToRefreshState()
 
-    // Fetch competitions
-    LaunchedEffect(userId) {
+    fun fetchCompetitions() {
         firestoreManager.getEnrolledCompetitions(userId) { result ->
-            if (result.isNotEmpty()) {
-                competitions = result
-                loading = false
-            } else {
+            competitions = result.ifEmpty {
                 error = "Not enrolled in any competitions yet"
-                loading = false
+                emptyList()
             }
+            loading = false
         }
     }
 
+    // Initial fetch
+    LaunchedEffect(userId) { fetchCompetitions() }
+
     if (!loading && error == null) {
-        Column(modifier = modifier.fillMaxWidth()) { CompetitionList(competitions) }
-    } else Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        when {
-            loading -> CircularProgressIndicator()
-            error != null -> Text(text = error!!)
+        PullToRefreshBox(
+            isRefreshing = loading, onRefresh = {
+                loading = true
+                fetchCompetitions()
+            }, modifier = modifier.fillMaxSize(), state = pullRefreshState
+        ) {
+            CompetitionList(competitions)
+        }
+    } else {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when {
+                loading -> CircularProgressIndicator()
+                error != null -> Text(text = error!!)
+            }
         }
     }
 }
