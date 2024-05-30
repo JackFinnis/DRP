@@ -16,7 +16,7 @@ jobs:
         distribution: 'temurin'
         cache: gradle
     - name: Load google-services.json from secrets
-      run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > app/google-services.json
+      run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode --ignore-garbage > app/google-services.json
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
