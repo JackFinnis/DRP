@@ -18,11 +18,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import drp.screentime.firestore.FirestoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UsageStatsScreen
 import drp.screentime.ui.theme.ScreenTimeTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val firestoreManager = FirestoreManager();
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
