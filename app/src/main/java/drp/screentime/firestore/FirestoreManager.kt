@@ -1,155 +1,86 @@
 package drp.screentime.firestore
 
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.concurrent.CountDownLatch
 
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
 
-    companion object {
-        const val COLLECTION_USERS = "users"
-        const val COLLECTION_COMPETITIONS = "competitions"
-    }
+    fun getUserData(userId: String, onResult: (User?) -> Unit) =
+        fetchDocument(User.COLLECTION_NAME, userId, onResult)
 
-    // Fetch user data
-    fun getUserData(userId: String, onComplete: (User?) -> Unit) {
-        db.collection(COLLECTION_USERS).document(userId).get().addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val user = document.toObject(User::class.java)
-                    onComplete(user)
-                } else {
-                    onComplete(null)
-                }
-            }.addOnFailureListener { exception ->
-                onComplete(null)
-            }
-    }
+    fun getCompetitionData(competitionId: String, onResult: (Competition?) -> Unit) =
+        fetchDocument(Competition.COLLECTION_NAME, competitionId, onResult)
 
-    // Fetch group data
-    fun getCompetitionData(competitionId: String, onComplete: (Competition?) -> Unit) {
-        db.collection(COLLECTION_COMPETITIONS).document(competitionId).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val group = document.toObject(Competition::class.java)
-                    onComplete(group)
-                } else {
-                    onComplete(null)
-                }
-            }.addOnFailureListener { exception ->
-                onComplete(null)
-            }
-    }
-
-    // Fetch all competitions user is enrolled in
-    fun getEnrolledCompetitions(userId: String, onComplete: (List<Competition>) -> Unit) {
+    fun getEnrolledCompetitions(userId: String, onResult: (List<Competition>) -> Unit) {
         getUserData(userId) { user ->
-            if (user != null) {
-                val comps = mutableListOf<Competition>()
-                val competitionIds = user.enrolledIn
-                val latch = CountDownLatch(competitionIds.size)
+            user?.let {
+                val competitions = mutableListOf<Competition>()
+                val pendingCompCount = user.enrolledIn.size
 
-                for (competitionId in competitionIds) {
-                    getCompetitionData(competitionId) { comp ->
-                        if (comp != null) {
-                            comps.add(comp)
-                        }
-                        latch.countDown()
+                user.enrolledIn.forEach { competitionId ->
+                    getCompetitionData(competitionId) { competition ->
+                        competition?.let { competitions.add(it) }
+                        if (competitions.size == pendingCompCount) onResult(competitions)
                     }
                 }
-
-                Thread {
-                    latch.await()
-                    onComplete(comps)
-                }.start()
-            } else {
-                onComplete(emptyList())
-            }
+            } ?: onResult(emptyList())
         }
     }
 
-    fun addUser(name: String, onComplete: (String?) -> Unit) {
-        val newUserRef = db.collection(COLLECTION_USERS).document()
-        val newUser = User(newUserRef.id, name, emptyList())
+    fun addUser(name: String, onComplete: (String?) -> Unit) =
+        addDocument(User.COLLECTION_NAME, User(name = name), onComplete)
 
-        newUserRef.set(newUser)
-            .addOnSuccessListener {
-                onComplete(newUserRef.id)
-            }
-            .addOnFailureListener {
-                onComplete(null)
-            }
-    }
-
-    /** Sets the name of the user with the given ID. */
     fun setUserName(userId: String, name: String, onComplete: (Boolean) -> Unit) {
-        val userRef = db.collection(COLLECTION_USERS).document(userId)
-        userRef.update("name", name)
-            .addOnSuccessListener {
-                onComplete(true)
-            }
-            .addOnFailureListener {
-                onComplete(false)
-            }
+        db.collection(User.COLLECTION_NAME).document(userId).update(User.FIELD_NAME, name)
+            .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
     fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
-        val userRef = db.collection(COLLECTION_USERS).document(userId)
+        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
+        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
+
         db.runTransaction { transaction ->
             val user = transaction.get(userRef).toObject(User::class.java)
-            if (user != null) {
-                val updatedEnrolledIn = user.enrolledIn.toMutableList()
-                updatedEnrolledIn.add(competitionId)
-                transaction.update(userRef, "enrolledIn", updatedEnrolledIn)
+            val comp = transaction.get(compRef).toObject(Competition::class.java)
+
+            if (user != null && comp != null) {
+                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn + competitionId)
+                transaction.update(
+                    compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard + (userId to 0)
+                )
             }
-        }.addOnSuccessListener {
-            onComplete(true)
-        }.addOnFailureListener {
-            onComplete(false)
-        }
+        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-    fun createCompetition(competitionName: String, onComplete: (Boolean) -> Unit) {
-        val newCompRef = db.collection(COLLECTION_USERS).document()
-        val newComp = Competition(newCompRef.id, competitionName, emptyMap())
+    fun createCompetition(competitionName: String, onComplete: (String?) -> Unit) =
+        addDocument(Competition.COLLECTION_NAME, Competition(name = competitionName), onComplete)
 
-        newCompRef.set(newComp)
-            .addOnSuccessListener {
-                onComplete(true)
-            }
-            .addOnFailureListener {
-                onComplete(false)
-            }
-    }
+    fun updateScore(
+        competitionId: String, userId: String, newScore: Int, onComplete: (Boolean) -> Unit
+    ) {
+        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
 
-    // Update score in a competition
-    fun updateScore(competitionId: String, userId: String, newScore: Int, onComplete: (Boolean) -> Unit) {
-        val compRef = db.collection(COLLECTION_COMPETITIONS).document(competitionId)
         db.runTransaction { transaction ->
             val comp = transaction.get(compRef).toObject(Competition::class.java)
-            if (comp != null) {
-                val updatedScores = comp.leaderboard.toMutableMap()
-                updatedScores[userId] = newScore
-                transaction.update(compRef, "leaderboard", updatedScores)
+            comp?.let {
+                transaction.update(
+                    compRef, Competition.FIELD_LEADERBOARD, it.leaderboard + (userId to newScore)
+                )
             }
-        }.addOnSuccessListener {
-            onComplete(true)
-        }.addOnFailureListener {
-            onComplete(false)
-        }
+        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-    // Add user to a competition
-    fun addUserToCompetition(competitionId: String, userId: String, onComplete: (Boolean) -> Unit) {
-        val compRef = db.collection(COLLECTION_COMPETITIONS).document(competitionId)
-        db.runTransaction { transaction ->
-            val comp = transaction.get(compRef).toObject(Competition::class.java)
-            if (comp != null) {
-                transaction.update(compRef, "leaderboard", comp.leaderboard.toMutableMap().put(userId, 0))
-            }
-        }.addOnSuccessListener {
-            onComplete(true)
-        }.addOnFailureListener {
-            onComplete(false)
-        }
+    private inline fun <reified T> fetchDocument(
+        collection: String, documentId: String, noinline onResult: (T?) -> Unit
+    ) {
+        db.collection(collection).document(documentId).get()
+            .addOnSuccessListener { onResult(it.toObject(T::class.java)) }
+            .addOnFailureListener { onResult(null) }
+    }
+
+    private fun <T : Any> addDocument(collection: String, data: T, onComplete: (String?) -> Unit) {
+        val newDocRef = db.collection(collection).document()
+        newDocRef.set(data).addOnSuccessListener { onComplete(newDocRef.id) }
+            .addOnFailureListener { onComplete(null) }
     }
 }

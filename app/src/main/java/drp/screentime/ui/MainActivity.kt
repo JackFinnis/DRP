@@ -141,7 +141,6 @@ private fun createUser(
         // Enroll in the single competition
         val competition = "QUQYodR01IUu1iaj4qKn"
         firestoreManager.enrollInCompetition(newUserId!!, competition) { }
-        firestoreManager.addUserToCompetition(newUserId, competition) { }
     }
 }
 
