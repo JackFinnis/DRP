@@ -6,12 +6,14 @@ import java.util.concurrent.CountDownLatch
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
 
-    private val userCollection = "users";
-    private val competitionCollection = "competitions";
+    companion object {
+        const val COLLECTION_USERS = "users"
+        const val COLLECTION_COMPETITIONS = "competitions"
+    }
 
     // Fetch user data
     fun getUserData(userId: String, onComplete: (User?) -> Unit) {
-        db.collection("users").document(userId).get().addOnSuccessListener { document ->
+        db.collection(COLLECTION_USERS).document(userId).get().addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val user = document.toObject(User::class.java)
                     onComplete(user)
@@ -25,7 +27,7 @@ class FirestoreManager {
 
     // Fetch group data
     fun getCompetitionData(competitionId: String, onComplete: (Competition?) -> Unit) {
-        db.collection(competitionCollection).document(competitionId).get()
+        db.collection(COLLECTION_COMPETITIONS).document(competitionId).get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val group = document.toObject(Competition::class.java)
@@ -66,7 +68,7 @@ class FirestoreManager {
     }
 
     fun addUser(firstName: String, lastName: String, onComplete: (String?) -> Unit) {
-        val newUserRef = db.collection(userCollection).document()
+        val newUserRef = db.collection(COLLECTION_USERS).document()
         val newUser = User(newUserRef.id, firstName, lastName, emptyList())
 
         newUserRef.set(newUser)
@@ -79,7 +81,7 @@ class FirestoreManager {
     }
 
     fun createCompetition(competitionName: String, onComplete: (Boolean) -> Unit) {
-        val newCompRef = db.collection(userCollection).document()
+        val newCompRef = db.collection(COLLECTION_USERS).document()
         val newComp = Competition(newCompRef.id, competitionName, emptyMap())
 
         newCompRef.set(newComp)
@@ -93,7 +95,7 @@ class FirestoreManager {
 
     // Update score in a competition
     fun updateScore(competitionId: String, userId: String, newScore: Int, onComplete: (Boolean) -> Unit) {
-        val compRef = db.collection(competitionCollection).document(competitionId)
+        val compRef = db.collection(COLLECTION_COMPETITIONS).document(competitionId)
         db.runTransaction { transaction ->
             val comp = transaction.get(compRef).toObject(Competition::class.java)
             if (comp != null) {
