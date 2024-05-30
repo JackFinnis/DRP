@@ -113,7 +113,7 @@ class FirestoreManager {
 
     // Add user to a competition
     fun addUserToCompetition(competitionId: String, userId: String, onComplete: (Boolean) -> Unit) {
-        val compRef = db.collection(competitionCollection).document(competitionId)
+        val compRef = db.collection(COLLECTION_COMPETITIONS).document(competitionId)
         db.runTransaction { transaction ->
             val comp = transaction.get(compRef).toObject(Competition::class.java)
             if (comp != null) {
