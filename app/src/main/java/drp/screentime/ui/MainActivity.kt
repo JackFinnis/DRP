@@ -20,7 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
-import drp.screentime.ui.components.UsageStatsScreen
+import drp.screentime.ui.components.UserCompetitionsScreen
 import drp.screentime.ui.theme.ScreenTimeTheme
 
 class MainActivity : ComponentActivity() {
@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     val sheetState = rememberModalBottomSheetState()
     val showBottomSheet = remember { mutableStateOf(false) }
+    val userId = "InPUKwlctve6bzgSVgfeK85g4p43"
 
     Scaffold(
         floatingActionButton = {
@@ -56,7 +57,7 @@ fun MainScreen() {
         }
     ) { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
-            UsageStatsScreen()
+            UserCompetitionsScreen(userId = userId)
         }
 
         if (showBottomSheet.value) {
