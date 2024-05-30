@@ -1,7 +1,6 @@
 package drp.screentime.firestore
 
-import androidx.core.graphics.translationMatrix
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.CountDownLatch
 
 class FirestoreManager {
@@ -79,6 +78,22 @@ class FirestoreManager {
             .addOnFailureListener {
                 onComplete(null)
             }
+    }
+
+    fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
+        val userRef = db.collection(COLLECTION_USERS).document(userId)
+        db.runTransaction { transaction ->
+            val user = transaction.get(userRef).toObject(User::class.java)
+            if (user != null) {
+                val updatedEnrolledIn = user.enrolledIn.toMutableList()
+                updatedEnrolledIn.add(competitionId)
+                transaction.update(userRef, "enrolledIn", updatedEnrolledIn)
+            }
+        }.addOnSuccessListener {
+            onComplete(true)
+        }.addOnFailureListener {
+            onComplete(false)
+        }
     }
 
     fun createCompetition(competitionName: String, onComplete: (Boolean) -> Unit) {
