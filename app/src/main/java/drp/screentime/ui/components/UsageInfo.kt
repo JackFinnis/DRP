@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import drp.screentime.usage.UsageStatsProcessor
+import drp.screentime.util.formatDuration
 import drp.screentime.util.getAppName
 
 @Composable
@@ -60,8 +61,9 @@ fun UsageStatItem(packageName: String, usage: Long) {
             Spacer(
                 Modifier
                     .weight(1f)
-                    .fillMaxHeight())
-            Text(text = "${usage}s")
+                    .fillMaxHeight()
+            )
+            Text(text = formatDuration(usage))
         }
     }
 }
