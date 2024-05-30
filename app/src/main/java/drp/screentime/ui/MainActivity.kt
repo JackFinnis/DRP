@@ -7,12 +7,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -46,14 +50,18 @@ fun MainScreen() {
     val userId = "InPUKwlctve6bzgSVgfeK85g4p43"
 
     Scaffold(
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text("Edit name") },
-                icon = { Icon(Icons.Filled.Edit, contentDescription = "Edit my name") },
-                onClick = {
-                    showBottomSheet.value = true
+        topBar = {
+            TopAppBar(title = { Text("Screen Time") }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+            ), actions = {
+                IconButton(onClick = {}) {
+                    Icon(Icons.Filled.Add, contentDescription = "Create new competition")
                 }
-            )
+                IconButton(onClick = { showBottomSheet.value = true }) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Configure user settings")
+                }
+            })
         }
     ) { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
