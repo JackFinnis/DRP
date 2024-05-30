@@ -80,6 +80,18 @@ class FirestoreManager {
             }
     }
 
+    /** Sets the name of the user with the given ID. */
+    fun setUserName(userId: String, name: String, onComplete: (Boolean) -> Unit) {
+        val userRef = db.collection(COLLECTION_USERS).document(userId)
+        userRef.update("name", name)
+            .addOnSuccessListener {
+                onComplete(true)
+            }
+            .addOnFailureListener {
+                onComplete(false)
+            }
+    }
+
     fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
         val userRef = db.collection(COLLECTION_USERS).document(userId)
         db.runTransaction { transaction ->

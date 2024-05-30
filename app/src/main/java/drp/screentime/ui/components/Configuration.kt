@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import kotlinx.coroutines.launch
 
@@ -67,6 +68,7 @@ fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Bo
                 onClick = {
                     scope.launch {
                         dataStoreManager.saveUserName(name)
+                        FirestoreManager().setUserName(userId, name) {}
                         scope.launch {
                             sheetState.hide()
                         }.invokeOnCompletion {
