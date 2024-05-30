@@ -1,6 +1,6 @@
 package drp.screentime.util
 
-fun generateFirstName(): String {
+fun generateUserName(): String {
     val adjectives = listOf(
         "Funky",
         "Silly",
@@ -13,10 +13,6 @@ fun generateFirstName(): String {
         "Sneaky",
         "Sleepy"
     )
-    return adjectives.random()
-}
-
-fun generateLastName(): String {
     val animals = listOf(
         "Octopus",
         "Elephant",
@@ -29,5 +25,5 @@ fun generateLastName(): String {
         "Wolf",
         "Fox"
     )
-    return animals.random()
+    return "${adjectives.random()} ${animals.random()}"
 }

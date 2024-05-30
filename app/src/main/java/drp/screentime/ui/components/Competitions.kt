@@ -126,7 +126,7 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int) {
 
     LaunchedEffect(userId) {
         firestoreManager.getUserData(userId) { user ->
-            userName = user?.let { "${it.firstName} ${it.lastName}" } ?: "Unknown User"
+            userName = user?.name ?: "Unknown User"
             loading = false
         }
     }

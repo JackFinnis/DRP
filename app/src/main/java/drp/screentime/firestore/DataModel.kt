@@ -2,8 +2,7 @@ package drp.screentime.firestore
 
 data class User(
     val id: String = "",
-    val firstName: String = "",
-    val lastName: String = "",
+    val name: String = "",
     val enrolledIn: List<String> = listOf()
 )
 

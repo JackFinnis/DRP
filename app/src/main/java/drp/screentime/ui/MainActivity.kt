@@ -37,8 +37,7 @@ import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
 import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.usage.UsageStatsProcessor
-import drp.screentime.util.generateFirstName
-import drp.screentime.util.generateLastName
+import drp.screentime.util.generateUserName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -130,13 +129,12 @@ fun MainScreen() {
 private fun createUser(
     firestoreManager: FirestoreManager, scope: CoroutineScope, dataStoreManager: DataStoreManager
 ) {
-    val firstName = generateFirstName()
-    val lastName = generateLastName()
-    firestoreManager.addUser(firstName, lastName) { newUserId ->
+    val name = generateUserName()
+    firestoreManager.addUser(name) { newUserId ->
         newUserId?.let {
             scope.launch {
                 dataStoreManager.saveUserId(it)
-                dataStoreManager.saveUserName("$firstName $lastName")
+                dataStoreManager.saveUserName(name)
             }
         }
 

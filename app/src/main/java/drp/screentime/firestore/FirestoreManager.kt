@@ -67,9 +67,9 @@ class FirestoreManager {
         }
     }
 
-    fun addUser(firstName: String, lastName: String, onComplete: (String?) -> Unit) {
+    fun addUser(name: String, onComplete: (String?) -> Unit) {
         val newUserRef = db.collection(COLLECTION_USERS).document()
-        val newUser = User(newUserRef.id, firstName, lastName, emptyList())
+        val newUser = User(newUserRef.id, name, emptyList())
 
         newUserRef.set(newUser)
             .addOnSuccessListener {
