@@ -5,10 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,17 +21,26 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import drp.screentime.firestore.FirestoreManager
+import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
 import drp.screentime.ui.theme.ScreenTimeTheme
+import drp.screentime.util.generateFirstName
+import drp.screentime.util.generateLastName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
-    private val firestoreManager = FirestoreManager();
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,15 +52,46 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val sheetState = rememberModalBottomSheetState()
     val showBottomSheet = remember { mutableStateOf(false) }
-    val userId = "InPUKwlctve6bzgSVgfeK85g4p43"
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val firestoreManager = remember { FirestoreManager() }
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
+    var userId by remember { mutableStateOf<String?>(null) }
+    val userName by dataStoreManager.userNameFlow.collectAsState(initial = null)
+
+    LaunchedEffect(Unit) {
+        // Load the user ID from DataStore
+        dataStoreManager.userIdFlow.collect { storedUserId ->
+            if (storedUserId == null) {
+                createUser(firestoreManager, scope, dataStoreManager)
+            } else {
+                // Verify the user exists in Firestore
+                firestoreManager.getUserData(storedUserId) { user ->
+                    if (user == null) {
+                        // User doesn't exist, create a new user
+                        createUser(firestoreManager, scope, dataStoreManager)
+                    } else userId = storedUserId
+                }
+            }
+        }
+    }
+
+    if (userId == null) Scaffold {
+        Box(
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else Scaffold(
         topBar = {
             TopAppBar(title = { Text("Screen Time") }, colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -65,11 +107,26 @@ fun MainScreen() {
         }
     ) { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
-            UserCompetitionsScreen(userId = userId)
+            UserCompetitionsScreen(userId = userId!!)
         }
 
         if (showBottomSheet.value) {
-            SaveNameBottomSheet(sheetState, showBottomSheet)
+            SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
+        }
+    }
+}
+
+private fun createUser(
+    firestoreManager: FirestoreManager, scope: CoroutineScope, dataStoreManager: DataStoreManager
+) {
+    val firstName = generateFirstName()
+    val lastName = generateLastName()
+    firestoreManager.addUser(firstName, lastName) { newUserId ->
+        newUserId?.let {
+            scope.launch {
+                dataStoreManager.saveUserId(it)
+                dataStoreManager.saveUserName("$firstName $lastName")
+            }
         }
     }
 }

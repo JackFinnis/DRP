@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Boolean>) {
+fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Boolean>, userId: String) {
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
     val scope = rememberCoroutineScope()
@@ -53,7 +53,8 @@ fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Bo
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text("Enter your name", style = MaterialTheme.typography.headlineSmall)
+            Text("User settings", style = MaterialTheme.typography.headlineSmall)
+            Text("ID: $userId", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = name,
@@ -76,7 +77,7 @@ fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Bo
                     }
                 }, modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Save Name")
+                Text("Save")
             }
         }
     }
