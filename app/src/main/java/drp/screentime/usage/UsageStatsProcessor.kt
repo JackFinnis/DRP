@@ -3,6 +3,7 @@ package drp.screentime.usage
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.pm.PackageManager
+import android.os.Build
 import drp.screentime.util.addDays
 import drp.screentime.util.getHomeScreenLauncher
 import drp.screentime.util.getMidnight
@@ -19,7 +20,7 @@ class UsageStatsProcessor(
      * @param day The day to get the usage stats for. Defaults to today.
      * @return A list of usage stats for the given day.
      */
-    fun getUsageStats(day: Date = Date()): List<UsageStats> {
+    private fun getUsageStats(day: Date = Date()): List<UsageStats> {
         val startTime = getMidnight(day)
         val endTime = getMidnight(addDays(day, 1))
 
@@ -29,7 +30,13 @@ class UsageStatsProcessor(
             .filterNot { hiddenPackages.contains(it.packageName) }
     }
 
-    fun getUsageStatsSorted(day: Date = Date()): List<UsageStats> {
-        return getUsageStats(day).sortedByDescending { it.totalTimeInForeground }
+    private fun UsageStats.totalUsageMillis(): Long {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) totalTimeVisible else totalTimeInForeground
+    }
+
+    fun getApplicationUsageStats(day: Date = Date()): Map<String, Long> {
+        return getUsageStats(day).associate {
+            it.packageName to it.totalUsageMillis() / 1000
+        }
     }
 }
