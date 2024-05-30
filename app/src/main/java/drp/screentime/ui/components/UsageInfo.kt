@@ -1,6 +1,7 @@
 package drp.screentime.ui.components
 
 import android.app.usage.UsageStatsManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -66,8 +67,19 @@ fun UsageStatItem(packageName: String, usage: Long) {
 }
 
 fun openUsageAccessSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-    intent.data = Uri.fromParts("package", context.packageName, null)
-    context.startActivity(intent)
+    try {
+        // Try to open Usage Access settings but not all devices have it
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        val generalSettingsIntent = Intent(Settings.ACTION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(generalSettingsIntent)
+    }
 }
+
 
