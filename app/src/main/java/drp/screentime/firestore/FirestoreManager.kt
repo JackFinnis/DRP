@@ -1,5 +1,6 @@
 package drp.screentime.firestore
 
+import androidx.core.graphics.translationMatrix
 import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.concurrent.CountDownLatch
 
@@ -102,6 +103,21 @@ class FirestoreManager {
                 val updatedScores = comp.leaderboard.toMutableMap()
                 updatedScores[userId] = newScore
                 transaction.update(compRef, "leaderboard", updatedScores)
+            }
+        }.addOnSuccessListener {
+            onComplete(true)
+        }.addOnFailureListener {
+            onComplete(false)
+        }
+    }
+
+    // Add user to a competition
+    fun addUserToCompetition(competitionId: String, userId: String, onComplete: (Boolean) -> Unit) {
+        val compRef = db.collection(competitionCollection).document(competitionId)
+        db.runTransaction { transaction ->
+            val comp = transaction.get(compRef).toObject(Competition::class.java)
+            if (comp != null) {
+                transaction.update(compRef, "leaderboard", comp.leaderboard.toMutableMap().put(userId, 0))
             }
         }.addOnSuccessListener {
             onComplete(true)
