@@ -39,4 +39,8 @@ class UsageStatsProcessor(
             it.packageName to it.totalUsageMillis() / 1000
         }
     }
+
+    fun getTotalUsage(day: Date = Date()): Long {
+        return getUsageStats(day).sumOf { it.totalUsageMillis() } / 1000
+    }
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
+import drp.screentime.util.formatDuration
 
 @ExperimentalMaterial3Api
 @Composable
@@ -150,7 +151,7 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int) {
                     .weight(1f)
                     .fillMaxHeight()
             )
-            Text(text = score.toString())
+            Text(text = formatDuration(score.toLong()))
         }
     }
 }

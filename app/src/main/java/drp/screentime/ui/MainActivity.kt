@@ -1,5 +1,7 @@
 package drp.screentime.ui
 
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,7 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,7 +24,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
 import drp.screentime.ui.theme.ScreenTimeTheme
+import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.generateFirstName
 import drp.screentime.util.generateLastName
 import kotlinx.coroutines.CoroutineScope
@@ -63,7 +65,11 @@ fun MainScreen() {
     val scope = rememberCoroutineScope()
 
     var userId by remember { mutableStateOf<String?>(null) }
-    val userName by dataStoreManager.userNameFlow.collectAsState(initial = null)
+
+    val usageStatsProcessor = UsageStatsProcessor(
+        context.packageManager,
+        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    )
 
     LaunchedEffect(Unit) {
         // Load the user ID from DataStore
@@ -76,7 +82,10 @@ fun MainScreen() {
                     if (user == null) {
                         // User doesn't exist, create a new user
                         createUser(firestoreManager, scope, dataStoreManager)
-                    } else userId = storedUserId
+                    } else {
+                        userId = storedUserId
+                        postScreenTimeToDb(storedUserId, usageStatsProcessor)
+                    }
                 }
             }
         }
@@ -97,8 +106,10 @@ fun MainScreen() {
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 titleContentColor = MaterialTheme.colorScheme.primary,
             ), actions = {
-                IconButton(onClick = {}) {
-                    Icon(Icons.Filled.Add, contentDescription = "Create new competition")
+                IconButton(onClick = {
+                    postScreenTimeToDb(userId!!, usageStatsProcessor)
+                }) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh screen time")
                 }
                 IconButton(onClick = { showBottomSheet.value = true }) {
                     Icon(Icons.Filled.Settings, contentDescription = "Configure user settings")
@@ -134,4 +145,10 @@ private fun createUser(
         firestoreManager.enrollInCompetition(newUserId!!, competition) { }
         firestoreManager.addUserToCompetition(newUserId, competition) { }
     }
+}
+
+fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor) {
+    FirestoreManager().updateScore(
+        "QUQYodR01IUu1iaj4qKn", userId, usageStatsProcessor.getTotalUsage().toInt()
+    ) {}
 }
