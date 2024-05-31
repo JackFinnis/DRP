@@ -101,7 +101,7 @@ fun MainScreen() {
         }
     } else Scaffold(
         topBar = {
-            TopAppBar(title = { Text("XX Screen Time") }, colors = TopAppBarDefaults.topAppBarColors(
+            TopAppBar(title = { Text("Screen Time") }, colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 titleContentColor = MaterialTheme.colorScheme.primary,
             ), actions = {
