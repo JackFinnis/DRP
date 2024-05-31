@@ -1,6 +1,10 @@
 package drp.screentime.firestore
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
@@ -68,6 +72,32 @@ class FirestoreManager {
                 )
             }
         }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+    }
+
+    fun uploadUsageData(
+        userId: String,
+        usageData: Map<String, Long>,
+        onComplete: (Boolean) -> Unit
+    ) {
+        val usageCollectionRef = db.collection(User.COLLECTION_NAME).document(userId)
+            .collection(UsageData.COLLECTION_NAME)
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        usageCollectionRef.document(today).get()
+            .addOnSuccessListener { documentSnapshot ->
+                val newData = UsageData(today, usageData, Timestamp(Date()))
+                if (documentSnapshot.exists()) {
+                    documentSnapshot.reference.update(
+                        UsageData.FIELD_BREAKDOWN, usageData,
+                        UsageData.FIELD_LAST_SYNC, newData.lastSync
+                    ).addOnSuccessListener { onComplete(true) }
+                        .addOnFailureListener { onComplete(false) }
+                } else {
+                    usageCollectionRef.document(today).set(newData)
+                        .addOnSuccessListener { onComplete(true) }
+                        .addOnFailureListener { onComplete(false) }
+                }
+            }.addOnFailureListener { onComplete(false) }
     }
 
     private inline fun <reified T> fetchDocument(

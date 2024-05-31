@@ -148,4 +148,7 @@ fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor)
     FirestoreManager().updateScore(
         "QUQYodR01IUu1iaj4qKn", userId, usageStatsProcessor.getTotalUsage().toInt()
     ) {}
+
+    val usageStats = usageStatsProcessor.getApplicationUsageStats()
+    FirestoreManager().uploadUsageData(userId, usageStats) {}
 }

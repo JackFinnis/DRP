@@ -75,4 +75,7 @@ dependencies {
 
     // Saving user preferences
     implementation(libs.androidx.datastore.preferences)
+
+    // AndroidX work manager
+    implementation(libs.androidx.work.runtime.ktx)
 }
