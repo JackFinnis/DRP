@@ -13,11 +13,14 @@ fun PackageManager.isSystemApp(packageName: String): Boolean {
     return sysSig == appSig
 }
 
-fun PackageManager.getHomeScreenLauncher(): String {
-    val intent = Intent(Intent.ACTION_MAIN)
-    intent.addCategory(Intent.CATEGORY_HOME)
-    val resolveInfo = this.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-    return resolveInfo?.activityInfo?.packageName ?: ""
+fun PackageManager.getHomeScreenLaunchers(): List<String> {
+    val mainIntent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+    val homeApps = queryIntentActivities(mainIntent, PackageManager.MATCH_DEFAULT_ONLY)
+    return homeApps.map { it.activityInfo.packageName }
+}
+
+fun PackageManager.isTrackedApp(packageName: String): Boolean {
+    return !isSystemApp(packageName) && !getHomeScreenLaunchers().contains(packageName)
 }
 
 fun PackageManager.getAppSignatureHash(packageName: String): Int {

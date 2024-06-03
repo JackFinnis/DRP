@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Screen Time</string>
+    <string name="accessibility_service_description">Track app usage of specific distracting apps to help reduce smartphone addiction.</string>
 </resources>

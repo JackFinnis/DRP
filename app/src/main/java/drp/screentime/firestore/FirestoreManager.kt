@@ -100,6 +100,21 @@ class FirestoreManager {
             }.addOnFailureListener { onComplete(false) }
     }
 
+    fun updateCurrentApp(
+        userId: String,
+        appName: String?,
+        since: Date?,
+        onComplete: (Boolean) -> Unit
+    ) {
+        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
+        userRef.update(
+            User.FIELD_CURRENT_APP,
+            appName,
+            User.FIELD_CURRENT_APP_SINCE,
+            since?.let { Timestamp(it) }
+        ).addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+    }
+
     private inline fun <reified T> fetchDocument(
         collection: String, documentId: String, noinline onResult: (T?) -> Unit
     ) {

@@ -8,12 +8,16 @@ data class User(
     @DocumentId
     val id: String = "",
     val name: String = "",
-    val enrolledIn: List<String> = listOf()
+    val enrolledIn: List<String> = listOf(),
+    val currentApp: String? = null,
+    val currentAppSince: Timestamp? = null
 ) {
     companion object {
         const val COLLECTION_NAME = "users"
         const val FIELD_NAME = "name"
         const val FIELD_ENROLLED_IN = "enrolledIn"
+        const val FIELD_CURRENT_APP = "currentApp"
+        const val FIELD_CURRENT_APP_SINCE = "currentAppSince"
     }
 }
 
