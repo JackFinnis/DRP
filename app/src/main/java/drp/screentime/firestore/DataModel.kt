@@ -33,11 +33,13 @@ data class Competition(
     @DocumentId
     val id: String = "",
     val name: String = "",
-    val leaderboard: Map<String, Int> = mapOf()
+    val leaderboard: Map<String, Int> = mapOf(),
+    val inviteCode: String = ""
 ) {
     companion object {
         const val COLLECTION_NAME = "competitions"
         const val FIELD_NAME = "name"
         const val FIELD_LEADERBOARD = "leaderboard"
+        const val INVITE_CODE = "inviteCode"
     }
 }

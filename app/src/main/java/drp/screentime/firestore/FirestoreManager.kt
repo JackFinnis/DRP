@@ -56,8 +56,55 @@ class FirestoreManager {
         }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
+//    fun enrolWithInviteCode(userId: String, inviteCode: String, onComplete: (Boolean) -> Unit) {
+//        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
+//        val compRef = db.collection(Competition.COLLECTION_NAME).whereEqualTo(Competition.INVITE_CODE, inviteCode)
+//
+//        db.runTransaction { transaction ->
+//            val user = transaction.get(userRef).toObject(User::class.java)
+//            val compSnapshot = transaction.get(compRef).documents.firstOrNull()
+//            val comp = compSnapshot?.toObject(Competition::class.java)
+//
+//            if (user != null && comp != null && compSnapshot != null) {
+//                val compRef = compSnapshot.reference
+//                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn + comp.id)
+//                transaction.update(compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard + (userId to 0))
+//            } else {
+//                throw Exception("User or Competition not found")
+//            }
+//        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+//    }
+
+    fun removeFromCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
+        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
+        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
+
+        db.runTransaction { transaction ->
+            val user = transaction.get(userRef).toObject(User::class.java)
+            val comp = transaction.get(compRef).toObject(Competition::class.java)
+            if (user != null && comp != null) {
+                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn - competitionId)
+                if (comp.leaderboard.size != 1) {
+                    transaction.update(
+                        compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard - userId
+                    )
+                } else {
+                    transaction.delete(compRef)
+                }
+            }
+        }
+    }
+
     fun createCompetition(competitionName: String, onComplete: (String?) -> Unit) =
         addDocument(Competition.COLLECTION_NAME, Competition(name = competitionName), onComplete)
+
+    fun createCompetitionAndAddUser(userId: String, competitionName: String, onComplete: (Boolean) -> Unit) {
+        createCompetition(competitionName) { competitionId ->
+            competitionId?.let {
+                enrollInCompetition(userId, it, onComplete)
+            } ?: onComplete(false)
+        }
+    }
 
     fun updateScore(
         competitionId: String, userId: String, newScore: Int, onComplete: (Boolean) -> Unit

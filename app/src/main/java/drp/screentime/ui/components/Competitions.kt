@@ -13,12 +13,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -67,7 +70,18 @@ fun UserCompetitionsScreen(
                 fetchCompetitions()
             }, modifier = modifier.fillMaxSize(), state = pullRefreshState
         ) {
-            CompetitionList(competitions)
+            Column {
+                CompetitionList(competitions, firestoreManager, userId)
+                Button(
+                    onClick = {
+                        // Add a new competition
+                        firestoreManager.createCompetitionAndAddUser(userId, "Test") {}
+                        loading = true
+                        fetchCompetitions()
+                    }) {
+                    Text("Add Competition")
+                }
+            }
         }
     } else {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -80,23 +94,25 @@ fun UserCompetitionsScreen(
 }
 
 @Composable
-fun CompetitionList(competitions: List<Competition>) {
+fun CompetitionList(competitions: List<Competition>, firestoreManager: FirestoreManager, userId: String) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         items(competitions) { competition ->
-            CompetitionItem(competition)
+            CompetitionItem(competition, firestoreManager, userId)
         }
     }
 }
 
 @Composable
-fun CompetitionItem(competition: Competition) {
+fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager, userId: String) {
+    var showDialog by remember { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.outlinedCardElevation(),
-        onClick = {}) {
+        onClick = { showDialog = true}
+    ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -115,6 +131,14 @@ fun CompetitionItem(competition: Competition) {
                 }
             }
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Invite code") },
+            text = { Text(competition.name) },
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("OK") } })
     }
 }
 
