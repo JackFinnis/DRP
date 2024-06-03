@@ -9,6 +9,10 @@ import java.util.Locale
 class FirestoreManager {
     private val db = FirebaseFirestore.getInstance()
 
+    companion object {
+        const val MAX_BATCH_SIZE = 500
+    }
+
     fun getUserData(userId: String, onResult: (User?) -> Unit) =
         fetchDocument(User.COLLECTION_NAME, userId, onResult)
 
@@ -98,6 +102,19 @@ class FirestoreManager {
                         .addOnFailureListener { onComplete(false) }
                 }
             }.addOnFailureListener { onComplete(false) }
+    }
+
+    fun uploadUsageEvents(
+        userId: String, usageEvents: Iterable<UsageEvent>, onComplete: (Boolean) -> Unit
+    ) {
+        val usageCollectionRef = db.collection(User.COLLECTION_NAME).document(userId)
+            .collection(UsageEvent.COLLECTION_NAME)
+
+        val batch = db.batch()
+        usageEvents.forEach { batch.set(usageCollectionRef.document(), it) }
+
+        batch.commit().addOnSuccessListener { onComplete(true) }
+            .addOnFailureListener { onComplete(false) }
     }
 
     private inline fun <reified T> fetchDocument(

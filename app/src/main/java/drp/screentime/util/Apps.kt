@@ -1,5 +1,6 @@
 package drp.screentime.util
 
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -7,17 +8,42 @@ import android.os.Build
 fun PackageManager.getAppName(packageName: String): String =
     this.getApplicationInfo(packageName, 0).loadLabel(this).toString()
 
+fun PackageManager.getActivityName(packageName: String, className: String): String {
+    return try {
+        val appRes = getResourcesForApplication(packageName)
+        val activityInfo = getActivityInfo(ComponentName(packageName, className), 0)
+
+        val name = if (activityInfo.labelRes != 0) {
+            try {
+                appRes.getString(activityInfo.labelRes)
+            } catch (ignored: Exception) {
+                className.substringAfterLast('.').replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(appRes.configuration.locales[0]) else it.toString()
+                }
+            }
+        } else {
+            className.substringAfterLast('.').replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase(appRes.configuration.locales[0]) else it.toString()
+            }
+        }
+
+        name
+    } catch (e: PackageManager.NameNotFoundException) {
+        className
+    }
+}
+
+
 fun PackageManager.isSystemApp(packageName: String): Boolean {
     val sysSig = getAppSignatureHash("android")
     val appSig = getAppSignatureHash(packageName)
     return sysSig == appSig
 }
 
-fun PackageManager.getHomeScreenLauncher(): String {
-    val intent = Intent(Intent.ACTION_MAIN)
-    intent.addCategory(Intent.CATEGORY_HOME)
-    val resolveInfo = this.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-    return resolveInfo?.activityInfo?.packageName ?: ""
+fun PackageManager.getHomeScreenLaunchers(): List<String> {
+    val mainIntent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+    val homeApps = queryIntentActivities(mainIntent, PackageManager.MATCH_DEFAULT_ONLY)
+    return homeApps.map { it.activityInfo.packageName }
 }
 
 fun PackageManager.getAppSignatureHash(packageName: String): Int {
@@ -32,5 +58,9 @@ fun PackageManager.getAppSignatureHash(packageName: String): Int {
             packageName, PackageManager.GET_SIGNATURES
         ).signatures.contentDeepHashCode()
     }
+}
+
+fun PackageManager.getAllInstalledApps(): Iterable<String> {
+    return getInstalledApplications(PackageManager.GET_META_DATA).map { it.packageName }
 }
 

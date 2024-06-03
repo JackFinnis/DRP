@@ -29,6 +29,19 @@ data class UsageData(
     }
 }
 
+data class UsageEvent(
+    @DocumentId val id: String = "",
+    val type: Int = 0,
+    val timestamp: Timestamp = Timestamp(Date()),
+    val appId: String? = null,
+    val app: String? = null,
+    val action: String? = null,
+) {
+    companion object {
+        const val COLLECTION_NAME = "activity"
+    }
+}
+
 data class Competition(
     @DocumentId
     val id: String = "",
