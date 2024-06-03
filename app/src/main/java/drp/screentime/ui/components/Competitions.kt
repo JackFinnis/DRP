@@ -72,14 +72,22 @@ fun UserCompetitionsScreen(
         ) {
             Column {
                 CompetitionList(competitions, firestoreManager, userId)
-                Button(
-                    onClick = {
-                        // Add a new competition
-                        firestoreManager.createCompetitionAndAddUser(userId, "Test") {}
-                        loading = true
-                        fetchCompetitions()
-                    }) {
-                    Text("Add Competition")
+                Row {
+                    Button(
+                        onClick = {
+                            // Add a new competition
+                            firestoreManager.createCompetitionAndAddUser(userId, "Test") { }
+                            loading = true
+                            fetchCompetitions()
+                        }) {
+                        Text("Add Competition")
+                    }
+                    Button(
+                        onClick = {
+                            firestoreManager.enrollWithInviteCode(userId, "Test") { }
+                        }) {
+                        Text("Join Competition")
+                    }
                 }
             }
         }
@@ -137,7 +145,7 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Invite code") },
-            text = { Text(competition.name) },
+            text = { Text(competition.inviteCode) },
             confirmButton = { TextButton(onClick = { showDialog = false }) { Text("OK") } })
     }
 }

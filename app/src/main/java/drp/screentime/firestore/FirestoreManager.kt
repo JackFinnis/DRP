@@ -39,7 +39,7 @@ class FirestoreManager {
             .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-    fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
+     fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
         val userRef = db.collection(User.COLLECTION_NAME).document(userId)
         val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
 
@@ -56,24 +56,28 @@ class FirestoreManager {
         }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-//    fun enrolWithInviteCode(userId: String, inviteCode: String, onComplete: (Boolean) -> Unit) {
-//        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
-//        val compRef = db.collection(Competition.COLLECTION_NAME).whereEqualTo(Competition.INVITE_CODE, inviteCode)
-//
-//        db.runTransaction { transaction ->
-//            val user = transaction.get(userRef).toObject(User::class.java)
-//            val compSnapshot = transaction.get(compRef).documents.firstOrNull()
-//            val comp = compSnapshot?.toObject(Competition::class.java)
-//
-//            if (user != null && comp != null && compSnapshot != null) {
-//                val compRef = compSnapshot.reference
-//                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn + comp.id)
-//                transaction.update(compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard + (userId to 0))
-//            } else {
-//                throw Exception("User or Competition not found")
-//            }
-//        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
-//    }
+    private fun getCompetitionIdFromInviteCode(inviteCode: String, onResult: (String?) -> Unit) {
+        db.collection(Competition.COLLECTION_NAME)
+            .whereEqualTo(Competition.INVITE_CODE, inviteCode).get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.documents.size == 1) {
+                    onResult(querySnapshot.documents.firstOrNull()?.id)
+                } else {
+                    onResult(null)
+                }
+            }
+            .addOnFailureListener { onResult(null) }
+    }
+
+    fun enrollWithInviteCode(userId: String, inviteCode: String, onComplete: (Boolean) -> Unit) {
+        getCompetitionIdFromInviteCode(inviteCode) { competitionId ->
+            if (competitionId != null) {
+                enrollInCompetition(userId, competitionId, onComplete)
+            } else {
+                onComplete(false)
+            }
+        }
+    }
 
     fun removeFromCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
         val userRef = db.collection(User.COLLECTION_NAME).document(userId)
@@ -95,8 +99,8 @@ class FirestoreManager {
         }
     }
 
-    fun createCompetition(competitionName: String, onComplete: (String?) -> Unit) =
-        addDocument(Competition.COLLECTION_NAME, Competition(name = competitionName), onComplete)
+    private fun createCompetition(competitionName: String, onComplete: (String?) -> Unit) =
+        addDocument(Competition.COLLECTION_NAME, Competition(name = competitionName, inviteCode = generateInviteCode()), onComplete)
 
     fun createCompetitionAndAddUser(userId: String, competitionName: String, onComplete: (Boolean) -> Unit) {
         createCompetition(competitionName) { competitionId ->
