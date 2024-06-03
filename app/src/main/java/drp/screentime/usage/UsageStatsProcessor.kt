@@ -5,7 +5,7 @@ import android.app.usage.UsageStatsManager
 import android.content.pm.PackageManager
 import android.os.Build
 import drp.screentime.util.addDays
-import drp.screentime.util.getHomeScreenLauncher
+import drp.screentime.util.getHomeScreenLaunchers
 import drp.screentime.util.getMidnight
 import drp.screentime.util.isSystemApp
 import java.util.Date
@@ -14,7 +14,7 @@ class UsageStatsProcessor(
     private val pm: PackageManager, private val usageStatsManager: UsageStatsManager
 ) {
 
-    private val hiddenPackages = setOf("drp.screentime", pm.getHomeScreenLauncher())
+    private val hiddenPackages = setOf("drp.screentime") + pm.getHomeScreenLaunchers()
 
     /** Get the usage stats for the given day.
      * @param day The day to get the usage stats for. Defaults to today.
