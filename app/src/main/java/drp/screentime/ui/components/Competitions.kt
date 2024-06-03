@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -49,6 +50,8 @@ fun UserCompetitionsScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val pullRefreshState = rememberPullToRefreshState()
+    var showJoinCompetitionDialog by remember { mutableStateOf(false) }
+    var inviteCode by remember { mutableStateOf("") }
 
     fun fetchCompetitions() {
         firestoreManager.getEnrolledCompetitions(userId) { result ->
@@ -62,6 +65,33 @@ fun UserCompetitionsScreen(
 
     // Initial fetch
     LaunchedEffect(userId) { fetchCompetitions() }
+
+    if (showJoinCompetitionDialog) {
+        AlertDialog(
+            onDismissRequest = { showJoinCompetitionDialog = false },
+            confirmButton = { TextButton(onClick = {
+            // Handle submit action
+            firestoreManager.enrollWithInviteCode(userId, inviteCode) { }
+            showJoinCompetitionDialog = false
+        }) {
+            Text("Join")
+        } },
+            dismissButton = { TextButton(onClick = {
+                showJoinCompetitionDialog = false
+            }) {
+            Text("Cancel")
+        } },
+            title = { Text("Enter Join Code") },
+            text = {
+                TextField(
+                    value = inviteCode,
+                    onValueChange = { inviteCode = it },
+                    label = { Text("Invite Code") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
+    }
 
     if (!loading && error == null) {
         PullToRefreshBox(
@@ -84,7 +114,7 @@ fun UserCompetitionsScreen(
                     }
                     Button(
                         onClick = {
-                            firestoreManager.enrollWithInviteCode(userId, "Test") { }
+                            showJoinCompetitionDialog = true
                         }) {
                         Text("Join Competition")
                     }
