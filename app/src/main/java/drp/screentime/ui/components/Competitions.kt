@@ -26,6 +26,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -194,12 +195,16 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int) {
     var currentApp by remember { mutableStateOf<String?>(null) }
     var currentAppSince by remember { mutableStateOf<Date?>(null) }
 
-    LaunchedEffect(userId) {
-        firestoreManager.listenForUserDataChanges(userId) { user ->
+    DisposableEffect(userId) {
+        val listenerRegistration = firestoreManager.listenForUserDataChanges(userId) { user ->
             userName = user?.name ?: "Unknown User"
             currentApp = user?.currentApp
             currentAppSince = user?.currentAppSince?.toDate()
             loading = false
+        }
+
+        onDispose {
+            listenerRegistration.remove()
         }
     }
 

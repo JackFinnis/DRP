@@ -2,6 +2,7 @@ package drp.screentime.firestore
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -12,8 +13,9 @@ class FirestoreManager {
     fun getUserData(userId: String, onResult: (User?) -> Unit) =
         fetchDocument(User.COLLECTION_NAME, userId, onResult)
 
-    fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit) {
-        db.collection(User.COLLECTION_NAME).document(userId).addSnapshotListener { snapshot, e ->
+    fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit): ListenerRegistration {
+        return db.collection(User.COLLECTION_NAME).document(userId)
+            .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null || !snapshot.exists()) {
                     onResult(null)
                     return@addSnapshotListener
