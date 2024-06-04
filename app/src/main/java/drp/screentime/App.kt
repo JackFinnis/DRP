@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import drp.screentime.usage.AppUsageTrackingService
 import drp.screentime.usage.ScreenTimeUploadWorker
 import drp.screentime.usage.UsageStatsProcessor
+import drp.screentime.util.areAppNotificationsEnabled
 import java.util.concurrent.TimeUnit
 
 class App : Application() {
@@ -39,7 +40,8 @@ class App : Application() {
     companion object {
         fun areAllPermissionsGranted(context: Context): Boolean {
             return UsageStatsProcessor.hasUsageStatsAccess(context)
-                   && AppUsageTrackingService.isEnabled(context)
+                    && AppUsageTrackingService.isEnabled(context)
+                    && context.areAppNotificationsEnabled()
         }
     }
 }

@@ -1,7 +1,9 @@
 package drp.screentime.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.StackedBarChart
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
@@ -27,6 +30,7 @@ import drp.screentime.App.Companion.areAllPermissionsGranted
 import drp.screentime.ui.components.PermissionCheckRow
 import drp.screentime.usage.AppUsageTrackingService
 import drp.screentime.usage.UsageStatsProcessor
+import drp.screentime.util.areAppNotificationsEnabled
 
 class SetupActivity : ComponentActivity() {
 
@@ -81,5 +85,15 @@ fun PermissionsScreen(contentPadding: PaddingValues) {
             description = "Accessibility service",
             icon = Icons.Default.AccessibilityNew
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PermissionCheckRow(
+                intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .apply { putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName) },
+                isEnabled = Context::areAppNotificationsEnabled,
+                description = "Push notifications",
+                icon = Icons.Default.NotificationsActive
+            )
+        }
     }
 }
