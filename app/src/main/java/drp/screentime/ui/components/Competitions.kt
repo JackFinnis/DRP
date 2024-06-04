@@ -61,6 +61,7 @@ fun UserCompetitionsScreen(
 ) {
     var competitions by remember { mutableStateOf<List<Competition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var fullLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val pullRefreshState = rememberPullToRefreshState()
     var showJoinCompetitionDialog by remember { mutableStateOf(false) }
@@ -72,6 +73,7 @@ fun UserCompetitionsScreen(
                 emptyList()
             }
             loading = false
+            fullLoading = false
         }
     }
 
@@ -84,6 +86,7 @@ fun UserCompetitionsScreen(
             confirmButton = { TextButton(onClick = {
             // Handle submit action
                 firestoreManager.enrollWithInviteCode(userId, inviteCode) {
+                    fullLoading = true
                     loading = true
                     fetchCompetitions()
                 }
@@ -108,69 +111,113 @@ fun UserCompetitionsScreen(
         )
     }
 
-    Column(modifier = modifier) {
-        Box(modifier = Modifier.weight(1f)) {
-            if (!loading && error == null) {
-                PullToRefreshBox(
-                    isRefreshing = loading, onRefresh = {
-                        loading = true
-                        fetchCompetitions()
-                    }, modifier = Modifier.fillMaxSize(), state = pullRefreshState
-                ) {
-                    Box(modifier = Modifier) {
-                        CompetitionList(competitions, firestoreManager, userId)
+    if (!(loading && fullLoading) && error == null) {
+        Column(modifier = modifier) {
+            Box(modifier = Modifier.weight(1f)) {
+                if (!loading) {
+                    PullToRefreshBox(
+                        isRefreshing = loading, onRefresh = {
+                            loading = true
+                            fetchCompetitions()
+                        }, modifier = Modifier.fillMaxSize(), state = pullRefreshState
+                    ) {
+                        Box(modifier = Modifier) {
+                            CompetitionList(competitions, firestoreManager, userId)
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            if (competitions.isEmpty()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row {
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                // Add a new competition
+                                firestoreManager.createCompetitionAndAddUser(userId, "Test") {
+                                    fullLoading = true
+                                    loading = true
+                                    fetchCompetitions()
+                                }
+                            },
+                            icon = Icons.Filled.AddCircle,
+                            text = "Add Competition"
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                showJoinCompetitionDialog = true
+                            },
+                            icon = Icons.Filled.Person,
+                            text = "Join Competition"
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Row {
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = { showBottomSheet.value = true },
+                            icon = Icons.Filled.Face,
+                            text = "Edit Profile"
+                        )
                     }
                 }
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    when {
-                        loading -> CircularProgressIndicator()
-                        error != null -> Text(text = error!!)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row {
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {},
+                            icon = Icons.Filled.Info,
+                            text = "Insights"
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                showJoinCompetitionDialog = true
+                            },
+                            icon = Icons.Filled.Person,
+                            text = "Join Competition"
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Row {
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                // Add a new competition
+                                firestoreManager.createCompetitionAndAddUser(userId, "Test") {
+                                    loading = true
+                                    fetchCompetitions()
+                                }
+                            },
+                            icon = Icons.Filled.AddCircle,
+                            text = "Add Competition"
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        MainScreenButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = { showBottomSheet.value = true },
+                            icon = Icons.Filled.Face,
+                            text = "Edit Profile"
+                        )
                     }
                 }
             }
         }
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row {
-                MainScreenButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {},
-                    icon = Icons.Filled.Info,
-                    text = "Insights"
-                )
-                Spacer(Modifier.width(16.dp))
-                MainScreenButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        showJoinCompetitionDialog = true
-                    },
-                    icon = Icons.Filled.Person,
-                    text = "Join Competition"
-                )
+    } else {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when {
+                loading -> CircularProgressIndicator()
+                error != null -> Text(text = error!!)
             }
-            Spacer(Modifier.height(16.dp))
-            Row {
-                MainScreenButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        // Add a new competition
-                        firestoreManager.createCompetitionAndAddUser(userId, "Test") {
-                            loading = true
-                            fetchCompetitions()
-                        }
-                    },
-                    icon = Icons.Filled.AddCircle,
-                    text = "Add Competition"
-                )
-                Spacer(Modifier.width(16.dp))
-                MainScreenButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = { showBottomSheet.value = true },
-                    icon = Icons.Filled.Face,
-                    text = "Edit Profile"
-                )
-            }
-    }
+        }
     }
 }
 
