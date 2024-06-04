@@ -56,7 +56,6 @@ fun UserCompetitionsScreen(
     fun fetchCompetitions() {
         firestoreManager.getEnrolledCompetitions(userId) { result ->
             competitions = result.ifEmpty {
-                error = "Not enrolled in any competitions yet"
                 emptyList()
             }
             loading = false
@@ -133,13 +132,19 @@ fun UserCompetitionsScreen(
 
 @Composable
 fun CompetitionList(competitions: List<Competition>, firestoreManager: FirestoreManager, userId: String) {
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        items(competitions) { competition ->
-            CompetitionItem(competition, firestoreManager, userId)
+    if (competitions.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(text = "Not enrolled in any competitions")
+        }
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(competitions) { competition ->
+                CompetitionItem(competition, firestoreManager, userId)
+            }
         }
     }
 }
