@@ -21,7 +21,8 @@ class FirestoreManager {
                 val competitions = mutableListOf<Competition>()
                 val pendingCompCount = user.enrolledIn.size
 
-                user.enrolledIn.forEach { competitionId ->
+                if (pendingCompCount == 0) onResult(emptyList())
+                else user.enrolledIn.forEach { competitionId ->
                     getCompetitionData(competitionId) { competition ->
                         competition?.let { competitions.add(it) }
                         if (competitions.size == pendingCompCount) onResult(competitions)
