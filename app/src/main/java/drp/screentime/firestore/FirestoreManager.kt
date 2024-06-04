@@ -12,6 +12,17 @@ class FirestoreManager {
     fun getUserData(userId: String, onResult: (User?) -> Unit) =
         fetchDocument(User.COLLECTION_NAME, userId, onResult)
 
+    fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit) {
+        db.collection(User.COLLECTION_NAME).document(userId).addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null || !snapshot.exists()) {
+                    onResult(null)
+                    return@addSnapshotListener
+                }
+                val user = snapshot.toObject(User::class.java)
+                onResult(user)
+            }
+    }
+
     fun getCompetitionData(competitionId: String, onResult: (Competition?) -> Unit) =
         fetchDocument(Competition.COLLECTION_NAME, competitionId, onResult)
 

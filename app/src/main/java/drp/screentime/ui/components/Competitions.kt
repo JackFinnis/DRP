@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.util.formatDuration
+import java.util.Date
 
 @ExperimentalMaterial3Api
 @Composable
@@ -188,37 +189,28 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
 @Composable
 fun LeaderboardEntry(place: Int, userId: String, score: Int) {
     val firestoreManager = FirestoreManager()
-    var userName by remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("Loading...") }
     var loading by remember { mutableStateOf(true) }
+    var currentApp by remember { mutableStateOf<String?>(null) }
+    var currentAppSince by remember { mutableStateOf<Date?>(null) }
 
     LaunchedEffect(userId) {
-        firestoreManager.getUserData(userId) { user ->
+        firestoreManager.listenForUserDataChanges(userId) { user ->
             userName = user?.name ?: "Unknown User"
+            currentApp = user?.currentApp
+            currentAppSince = user?.currentAppSince?.toDate()
             loading = false
         }
     }
 
-    if (loading) {
-        Row {
-            Text(text = place.toString(), modifier = Modifier.padding(end = 16.dp))
-            Text(text = "Loading...")
-            Spacer(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
-            Text(text = score.toString())
-        }
-    } else {
-        Row {
-            Text(text = place.toString(), modifier = Modifier.padding(end = 16.dp))
-            Text(text = userName)
-            Spacer(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
-            Text(text = formatDuration(score.toLong()))
-        }
+    Row {
+        Text(text = place.toString(), modifier = Modifier.padding(end = 16.dp))
+        Text(text = userName)
+        Spacer(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+        )
+        Text(text = formatDuration(score.toLong()))
     }
 }
