@@ -18,9 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -177,31 +175,12 @@ fun UserCompetitionsScreen(
                     Row {
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
-                            onClick = {},
-                            icon = Icons.Filled.Info,
-                            text = "Insights",
-                            tonal = false
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
                             onClick = {
                                 showInviteDialog = true
                             },
                             icon = Icons.Filled.AddCircle,
                             text = "Invite People",
-                            tonal = true
-                        )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Row {
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                            },
-                            icon = Icons.Filled.Edit,
-                            text = "Edit Competition",
-                            tonal = true
+                            tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
@@ -304,9 +283,10 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
                 text = competition.name,
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(0.dp, 8.dp, 0.dp, 0.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             if (competition.leaderboard.isEmpty()) {
                 Text(text = "No leaderboard data available")
             } else {
@@ -319,7 +299,14 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
 }
 
 @Composable
-fun LeaderboardEntry(place: Int, userId: String, score: Int, isMe: Boolean) {
+fun LeaderboardEntry(
+    place: Int,
+    userId: String,
+    score: Int,
+    isMe: Boolean,
+    currentApp: String? = if ((0..3).random() != 0) null else "Instagram",
+    time: Long? = (0..5000L).random()
+) {
     val firestoreManager = FirestoreManager()
     var userName by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
@@ -337,9 +324,11 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int, isMe: Boolean) {
             if (isMe) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.secondaryContainer
         ),
+        onClick = {}
     ) {
         Row(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 place.toString(),
@@ -348,12 +337,39 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int, isMe: Boolean) {
                 color = if (isMe) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.secondary
             )
-            Text(
-                if (loading) "Loading..." else userName,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isMe) MaterialTheme.colorScheme.onPrimary
+            if (currentApp == null)
+                Text(
+                    if (loading) "Loading..." else userName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isMe) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSecondaryContainer
-            )
+                )
+            else
+                Column {
+                    Text(
+                        if (loading) "Loading..." else userName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "⦿",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSecondaryContainer)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Using $currentApp for ${formatDuration(time ?: 0)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
             Spacer(
                 Modifier
                     .weight(1f)
