@@ -1,9 +1,13 @@
 package drp.screentime.usage
 
+import android.Manifest
+import android.app.AppOpsManager
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Process
 import drp.screentime.util.addDays
 import drp.screentime.util.getHomeScreenLaunchers
 import drp.screentime.util.getMidnight
@@ -42,5 +46,19 @@ class UsageStatsProcessor(
 
     fun getTotalUsage(day: Date = Date()): Long {
         return getUsageStats(day).sumOf { it.totalUsageMillis() } / 1000
+    }
+
+    companion object {
+        fun hasUsageStatsAccess(context: Context): Boolean {
+            val appOps: AppOpsManager =
+                context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            @Suppress("DEPRECATION") val mode: Int = appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName
+            )
+
+            return if (mode == AppOpsManager.MODE_DEFAULT) {
+                context.checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED
+            } else mode == AppOpsManager.MODE_ALLOWED
+        }
     }
 }

@@ -23,7 +23,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -78,4 +78,7 @@ dependencies {
 
     // AndroidX work manager
     implementation(libs.androidx.work.runtime.ktx)
+
+    // All of the Material Design Icons
+    implementation(libs.androidx.material.icons.extended)
 }
