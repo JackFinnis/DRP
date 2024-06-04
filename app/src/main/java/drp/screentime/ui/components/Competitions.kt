@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -180,10 +181,9 @@ fun UserCompetitionsScreen(
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = {
-                                showJoinCompetitionDialog = true
                             },
-                            icon = Icons.Filled.Person,
-                            text = "Join Competition"
+                            icon = Icons.Filled.AddCircle,
+                            text = "Invite People"
                         )
                     }
                     Spacer(Modifier.height(16.dp))
@@ -191,14 +191,9 @@ fun UserCompetitionsScreen(
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = {
-                                // Add a new competition
-                                firestoreManager.createCompetitionAndAddUser(userId, "Test") {
-                                    loading = true
-                                    fetchCompetitions()
-                                }
                             },
-                            icon = Icons.Filled.AddCircle,
-                            text = "Add Competition"
+                            icon = Icons.Filled.Edit,
+                            text = "Edit Competition"
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
