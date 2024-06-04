@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.compose.AppTheme
 import drp.screentime.ui.components.UsageStatsScreen
-import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.util.getAppName
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -27,7 +27,7 @@ class UsageEventsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ScreenTimeTheme {
+            AppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     UsageStatsScreen(modifier = Modifier.padding(innerPadding))
                 }

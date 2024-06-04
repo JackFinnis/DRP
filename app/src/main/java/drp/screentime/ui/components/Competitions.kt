@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.util.formatDuration
@@ -67,6 +67,7 @@ fun UserCompetitionsScreen(
     val pullRefreshState = rememberPullToRefreshState()
     var showJoinCompetitionDialog by remember { mutableStateOf(false) }
     var inviteCode by remember { mutableStateOf("") }
+    var showInviteDialog by remember { mutableStateOf(false) }
 
     fun fetchCompetitions() {
         firestoreManager.getEnrolledCompetitions(userId) { result ->
@@ -146,7 +147,8 @@ fun UserCompetitionsScreen(
                                 }
                             },
                             icon = Icons.Filled.AddCircle,
-                            text = "Add Competition"
+                            text = "Add Competition",
+                            tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
@@ -155,7 +157,8 @@ fun UserCompetitionsScreen(
                                 showJoinCompetitionDialog = true
                             },
                             icon = Icons.Filled.Person,
-                            text = "Join Competition"
+                            text = "Join Competition",
+                            tonal = false
                         )
                     }
                     Spacer(Modifier.height(16.dp))
@@ -164,7 +167,8 @@ fun UserCompetitionsScreen(
                             modifier = Modifier.weight(1f),
                             onClick = { showBottomSheet.value = true },
                             icon = Icons.Filled.Face,
-                            text = "Edit Profile"
+                            text = "Edit Profile",
+                            tonal = true
                         )
                     }
                 }
@@ -175,15 +179,18 @@ fun UserCompetitionsScreen(
                             modifier = Modifier.weight(1f),
                             onClick = {},
                             icon = Icons.Filled.Info,
-                            text = "Insights"
+                            text = "Insights",
+                            tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = {
+                                showInviteDialog = true
                             },
                             icon = Icons.Filled.AddCircle,
-                            text = "Invite People"
+                            text = "Invite People",
+                            tonal = true
                         )
                     }
                     Spacer(Modifier.height(16.dp))
@@ -193,14 +200,16 @@ fun UserCompetitionsScreen(
                             onClick = {
                             },
                             icon = Icons.Filled.Edit,
-                            text = "Edit Competition"
+                            text = "Edit Competition",
+                            tonal = true
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = { showBottomSheet.value = true },
                             icon = Icons.Filled.Face,
-                            text = "Edit Profile"
+                            text = "Edit Profile",
+                            tonal = true
                         )
                     }
                 }
@@ -214,24 +223,54 @@ fun UserCompetitionsScreen(
             }
         }
     }
+
+    if (showInviteDialog) {
+        AlertDialog(
+            onDismissRequest = { showInviteDialog = false },
+            title = { Text("Invite code") },
+            text = { Text(if (competitions.isEmpty()) "" else competitions[0].inviteCode) },
+            confirmButton = { TextButton(onClick = { showInviteDialog = false }) { Text("OK") } })
+    }
 }
 
 @Composable
-fun MainScreenButton(modifier: Modifier, onClick: () -> Unit, icon: ImageVector, text: String) {
-    Button(
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(12.dp),
-        modifier = modifier,
-        onClick = onClick
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+fun MainScreenButton(
+    modifier: Modifier,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    text: String,
+    tonal: Boolean
+) {
+    if (tonal)
+        FilledTonalButton(
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(12.dp),
+            modifier = modifier,
+            onClick = onClick
         ) {
-            Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-            Spacer(Modifier.height(4.dp))
-            Text(text, fontSize = 16.sp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+                Spacer(Modifier.height(4.dp))
+                Text(text, style = MaterialTheme.typography.labelLarge)
+            }
         }
-    }
+    else
+        Button(
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(12.dp),
+            modifier = modifier,
+            onClick = onClick
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+                Spacer(Modifier.height(4.dp))
+                Text(text, style = MaterialTheme.typography.labelLarge)
+            }
+        }
 }
 
 @Composable
@@ -242,7 +281,6 @@ fun CompetitionList(competitions: List<Competition>, firestoreManager: Firestore
         }
     } else {
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
@@ -255,42 +293,33 @@ fun CompetitionList(competitions: List<Competition>, firestoreManager: Firestore
 
 @Composable
 fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager, userId: String) {
-    var showDialog by remember { mutableStateOf(false) }
-    Card(modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.outlinedCardElevation(),
-        onClick = { showDialog = true}
+    Box(
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = competition.name,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             if (competition.leaderboard.isEmpty()) {
                 Text(text = "No leaderboard data available")
             } else {
                 competition.leaderboard.toList().forEachIndexed { index, (user, score) ->
-                    LeaderboardEntry(index + 1, user, score)
+                    LeaderboardEntry(index + 1, user, score, user == userId)
                 }
             }
         }
     }
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Invite code") },
-            text = { Text(competition.inviteCode) },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("OK") } })
-    }
 }
 
 @Composable
-fun LeaderboardEntry(place: Int, userId: String, score: Int) {
+fun LeaderboardEntry(place: Int, userId: String, score: Int, isMe: Boolean) {
     val firestoreManager = FirestoreManager()
     var userName by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
@@ -302,27 +331,40 @@ fun LeaderboardEntry(place: Int, userId: String, score: Int) {
         }
     }
 
-    if (loading) {
-        Row {
-            Text(text = place.toString(), modifier = Modifier.padding(end = 16.dp))
-            Text(text = "Loading...")
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor =
+            if (isMe) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.secondaryContainer
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                place.toString(),
+                modifier = Modifier.width(36.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                if (loading) "Loading..." else userName,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSecondaryContainer
+            )
             Spacer(
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
             )
-            Text(text = score.toString())
-        }
-    } else {
-        Row {
-            Text(text = place.toString(), modifier = Modifier.padding(end = 16.dp))
-            Text(text = userName)
-            Spacer(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
+            Text(
+                text = formatDuration(score.toLong()),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isMe) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSecondaryContainer
             )
-            Text(text = formatDuration(score.toLong()))
         }
     }
 }

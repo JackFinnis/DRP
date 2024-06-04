@@ -22,11 +22,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.example.compose.AppTheme
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
-import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.generateUserName
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ScreenTimeTheme {
+            AppTheme {
                 MainScreen()
             }
         }
