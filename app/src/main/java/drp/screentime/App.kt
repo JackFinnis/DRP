@@ -1,12 +1,15 @@
 package drp.screentime
 
 import android.app.Application
+import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import drp.screentime.usage.AppUsageTrackingService
 import drp.screentime.usage.ScreenTimeUploadWorker
+import drp.screentime.usage.UsageStatsProcessor
 import java.util.concurrent.TimeUnit
 
 class App : Application() {
@@ -31,5 +34,12 @@ class App : Application() {
             ExistingPeriodicWorkPolicy.UPDATE,
             periodicWorkRequest
         )
+    }
+
+    companion object {
+        fun areAllPermissionsGranted(context: Context): Boolean {
+            return UsageStatsProcessor.hasUsageStatsAccess(context)
+                   && AppUsageTrackingService.isEnabled(context)
+        }
     }
 }
