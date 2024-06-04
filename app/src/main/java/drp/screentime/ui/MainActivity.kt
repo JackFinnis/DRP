@@ -92,7 +92,7 @@ fun MainScreen() {
         }
     } else Scaffold { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
-            UserCompetitionsScreen(userId = userId!!)
+            UserCompetitionsScreen(userId = userId!!, showBottomSheet = showBottomSheet)
         }
         if (showBottomSheet.value) {
             SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)

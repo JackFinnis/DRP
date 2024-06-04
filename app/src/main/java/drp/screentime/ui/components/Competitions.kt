@@ -36,6 +36,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,7 +56,8 @@ import drp.screentime.util.formatDuration
 fun UserCompetitionsScreen(
     modifier: Modifier = Modifier,
     userId: String,
-    firestoreManager: FirestoreManager = FirestoreManager()
+    firestoreManager: FirestoreManager = FirestoreManager(),
+    showBottomSheet: MutableState<Boolean>
 ) {
     var competitions by remember { mutableStateOf<List<Competition>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -81,7 +83,10 @@ fun UserCompetitionsScreen(
             onDismissRequest = { showJoinCompetitionDialog = false },
             confirmButton = { TextButton(onClick = {
             // Handle submit action
-            firestoreManager.enrollWithInviteCode(userId, inviteCode) { }
+                firestoreManager.enrollWithInviteCode(userId, inviteCode) {
+                    loading = true
+                    fetchCompetitions()
+                }
             showJoinCompetitionDialog = false
         }) {
             Text("Join")
@@ -103,66 +108,69 @@ fun UserCompetitionsScreen(
         )
     }
 
-    if (!loading && error == null) {
-        PullToRefreshBox(
-            isRefreshing = loading, onRefresh = {
-                loading = true
-                fetchCompetitions()
-            }, modifier = modifier.fillMaxSize(), state = pullRefreshState
-        ) {
-            Column {
-                Box(modifier = Modifier.weight(1f)) {
-                    CompetitionList(competitions, firestoreManager, userId)
-                }
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row {
-                        MainScreenButton(
-                            modifier = modifier.weight(1f),
-                            onClick = {},
-                            icon = Icons.Filled.Info,
-                            text = "Insights"
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        MainScreenButton(
-                            modifier = modifier.weight(1f),
-                            onClick = {
-                                // Add a new competition
-                                firestoreManager.createCompetitionAndAddUser(userId, "Test") { }
-                                loading = true
-                                fetchCompetitions()
-                            },
-                            icon = Icons.Filled.AddCircle,
-                            text = "Add Competition"
-                        )
+    Column(modifier = modifier) {
+        Box(modifier = Modifier.weight(1f)) {
+            if (!loading && error == null) {
+                PullToRefreshBox(
+                    isRefreshing = loading, onRefresh = {
+                        loading = true
+                        fetchCompetitions()
+                    }, modifier = Modifier.fillMaxSize(), state = pullRefreshState
+                ) {
+                    Box(modifier = Modifier) {
+                        CompetitionList(competitions, firestoreManager, userId)
                     }
-                    Spacer(Modifier.height(16.dp))
-                    Row {
-                        MainScreenButton(
-                            modifier = modifier.weight(1f),
-                            onClick = {
-                                showJoinCompetitionDialog = true
-                            },
-                            icon = Icons.Filled.Person,
-                            text = "Join Competition"
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        MainScreenButton(
-                            modifier = modifier.weight(1f),
-                            onClick = {},
-                            icon = Icons.Filled.Face,
-                            text = "Edit Profile"
-                        )
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    when {
+                        loading -> CircularProgressIndicator()
+                        error != null -> Text(text = error!!)
                     }
                 }
             }
         }
-    } else {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            when {
-                loading -> CircularProgressIndicator()
-                error != null -> Text(text = error!!)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row {
+                MainScreenButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {},
+                    icon = Icons.Filled.Info,
+                    text = "Insights"
+                )
+                Spacer(Modifier.width(16.dp))
+                MainScreenButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        showJoinCompetitionDialog = true
+                    },
+                    icon = Icons.Filled.Person,
+                    text = "Join Competition"
+                )
             }
-        }
+            Spacer(Modifier.height(16.dp))
+            Row {
+                MainScreenButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        // Add a new competition
+                        firestoreManager.createCompetitionAndAddUser(userId, "Test") {
+                            loading = true
+                            fetchCompetitions()
+                        }
+                    },
+                    icon = Icons.Filled.AddCircle,
+                    text = "Add Competition"
+                )
+                Spacer(Modifier.width(16.dp))
+                MainScreenButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = { showBottomSheet.value = true },
+                    icon = Icons.Filled.Face,
+                    text = "Edit Profile"
+                )
+            }
+    }
     }
 }
 
@@ -187,14 +195,14 @@ fun MainScreenButton(modifier: Modifier, onClick: () -> Unit, icon: ImageVector,
 @Composable
 fun CompetitionList(competitions: List<Competition>, firestoreManager: FirestoreManager, userId: String) {
     if (competitions.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = "Not enrolled in any competitions")
         }
     } else {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxSize()
         ) {
             items(competitions) { competition ->
                 CompetitionItem(competition, firestoreManager, userId)
