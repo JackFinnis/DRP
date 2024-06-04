@@ -22,8 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.compose.AppTheme
 import drp.screentime.ui.components.PermissionCheckRow
-import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.usage.AppUsageTrackingService
 import drp.screentime.usage.UsageStatsProcessor
 
@@ -34,7 +34,7 @@ class SetupActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ScreenTimeTheme {
+            AppTheme {
                 Scaffold(content = { PermissionsScreen(it) },
                     topBar = { LargeTopAppBar(title = { Text("Enable permissions") }) })
             }

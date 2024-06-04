@@ -7,22 +7,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,11 +22,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.example.compose.AppTheme
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
-import drp.screentime.ui.theme.ScreenTimeTheme
 import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.generateUserName
 import kotlinx.coroutines.CoroutineScope
@@ -49,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ScreenTimeTheme {
+            AppTheme {
                 MainScreen()
             }
         }
@@ -101,28 +90,10 @@ fun MainScreen() {
         ) {
             CircularProgressIndicator()
         }
-    } else Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Screen Time") }, colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.primary,
-            ), actions = {
-                IconButton(onClick = {
-                    postScreenTimeToDb(userId!!, usageStatsProcessor)
-                }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh screen time")
-                }
-                IconButton(onClick = { showBottomSheet.value = true }) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Configure user settings")
-                }
-            })
-        }
-    ) { contentPadding ->
+    } else Scaffold { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
-            UserCompetitionsScreen(userId = userId!!)
+            UserCompetitionsScreen(userId = userId!!, showBottomSheet = showBottomSheet)
         }
-
-
         if (showBottomSheet.value) {
             SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
         }
