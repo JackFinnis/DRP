@@ -34,8 +34,6 @@ import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -69,7 +67,6 @@ fun UserCompetitionsScreen(
 ) {
     var competitionId by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
-    val pullRefreshState = rememberPullToRefreshState()
     var showJoinCompetitionDialog by remember { mutableStateOf(false) }
     var inviteCode by remember { mutableStateOf("") }
     var showInviteDialog by remember { mutableStateOf(false) }
@@ -130,15 +127,8 @@ fun UserCompetitionsScreen(
                         CircularProgressIndicator()
                     }
                 } else if (competitionId != null) {
-                    PullToRefreshBox(
-                        isRefreshing = loading, onRefresh = {
-                            loading = true
-                            fetchCompetitions()
-                        }, modifier = Modifier.fillMaxSize(), state = pullRefreshState
-                    ) {
-                        Box(modifier = Modifier) {
-                            Leaderboard(competitionId!!, userId)
-                        }
+                    Box(modifier = Modifier) {
+                        Leaderboard(competitionId!!, userId)
                     }
                 }
             }
