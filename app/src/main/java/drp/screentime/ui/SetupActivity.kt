@@ -34,66 +34,63 @@ import drp.screentime.util.areAppNotificationsEnabled
 
 class SetupActivity : ComponentActivity() {
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            AppTheme {
-                Scaffold(content = { PermissionsScreen(it) },
-                    topBar = { LargeTopAppBar(title = { Text("Enable permissions") }) })
-            }
-        }
+  @OptIn(ExperimentalMaterial3Api::class)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    enableEdgeToEdge()
+    setContent {
+      AppTheme {
+        Scaffold(
+            content = { PermissionsScreen(it) },
+            topBar = { LargeTopAppBar(title = { Text("Enable permissions") }) })
+      }
     }
+  }
 
-    override fun onResume() {
-        super.onResume()
-        if (areAllPermissionsGranted(this)) {
-            // Nothing to do here, start MainActivity
-            startActivity(Intent(this, MainActivity::class.java))
-        }
+  override fun onResume() {
+    super.onResume()
+    if (areAllPermissionsGranted(this)) {
+      // Nothing to do here, start MainActivity
+      startActivity(Intent(this, MainActivity::class.java))
     }
+  }
 }
 
 @Composable
 fun PermissionsScreen(contentPadding: PaddingValues) {
-    Column(
-        modifier = Modifier
-            .padding(contentPadding)
-            .fillMaxSize()
-    ) {
-        val context = LocalContext.current
-        val packageName = context.packageName
+  Column(modifier = Modifier.padding(contentPadding).fillMaxSize()) {
+    val context = LocalContext.current
+    val packageName = context.packageName
 
-        Text(
-            text = "Authorising the following permissions is necessary for the app to function properly.",
-            modifier = Modifier.padding(16.dp)
-        )
+    Text(
+        text =
+            "Authorising the following permissions is necessary for the app to function properly.",
+        modifier = Modifier.padding(16.dp))
 
-        PermissionCheckRow(
-            intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
+    PermissionCheckRow(
+        intent =
+            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+              data = Uri.fromParts("package", packageName, null)
             },
-            isEnabled = UsageStatsProcessor.Companion::hasUsageStatsAccess,
-            description = "Usage data access",
-            icon = Icons.Default.StackedBarChart
-        )
+        isEnabled = UsageStatsProcessor.Companion::hasUsageStatsAccess,
+        description = "Usage data access",
+        icon = Icons.Default.StackedBarChart)
 
-        PermissionCheckRow(
-            intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
-            isEnabled = AppUsageTrackingService.Companion::isEnabled,
-            description = "Accessibility service",
-            icon = Icons.Default.AccessibilityNew
-        )
+    PermissionCheckRow(
+        intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+        isEnabled = AppUsageTrackingService.Companion::isEnabled,
+        description = "Accessibility service",
+        icon = Icons.Default.AccessibilityNew)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            PermissionCheckRow(
-                intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .apply { putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName) },
-                isEnabled = Context::areAppNotificationsEnabled,
-                description = "Push notifications",
-                icon = Icons.Default.NotificationsActive
-            )
-        }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      PermissionCheckRow(
+          intent =
+              Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+              },
+          isEnabled = Context::areAppNotificationsEnabled,
+          description = "Push notifications",
+          icon = Icons.Default.NotificationsActive)
     }
+  }
 }

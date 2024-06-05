@@ -56,7 +56,6 @@ import drp.screentime.util.formatDuration
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
-
 @ExperimentalMaterial3Api
 @Composable
 fun UserCompetitionsScreen(
@@ -66,142 +65,136 @@ fun UserCompetitionsScreen(
     showBottomSheet: MutableState<Boolean>,
     showAppBar: MutableState<Boolean>
 ) {
-    var competitionId by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    var showJoinCompetitionDialog by remember { mutableStateOf(false) }
-    var inviteCode by remember { mutableStateOf("") }
-    var showInviteDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+  var competitionId by remember { mutableStateOf<String?>(null) }
+  var loading by remember { mutableStateOf(true) }
+  var showJoinCompetitionDialog by remember { mutableStateOf(false) }
+  var inviteCode by remember { mutableStateOf("") }
+  var showInviteDialog by remember { mutableStateOf(false) }
+  val context = LocalContext.current
 
-    fun fetchCompetitions() {
-        firestoreManager.listenForUserDataChanges(userId) { user ->
-            competitionId = user?.competitionId
-            showAppBar.value = competitionId != null
-            loading = false
+  fun fetchCompetitions() {
+    firestoreManager.listenForUserDataChanges(userId) { user ->
+      competitionId = user?.competitionId
+      showAppBar.value = competitionId != null
+      loading = false
 
-            if (competitionId != null) {
-                firestoreManager.listenForCompetitionDataChanges(competitionId!!) { competition ->
-                    inviteCode = competition?.inviteCode ?: ""
-                }
-            }
+      if (competitionId != null) {
+        firestoreManager.listenForCompetitionDataChanges(competitionId!!) { competition ->
+          inviteCode = competition?.inviteCode ?: ""
         }
+      }
     }
+  }
 
-    // Initial fetch
-    LaunchedEffect(userId) { fetchCompetitions() }
+  // Initial fetch
+  LaunchedEffect(userId) { fetchCompetitions() }
 
-    var joinCompetitionCode by remember { mutableStateOf("") }
-    if (showJoinCompetitionDialog) {
-        AlertDialog(
-            onDismissRequest = { showJoinCompetitionDialog = false },
-            confirmButton = { TextButton(onClick = {
+  var joinCompetitionCode by remember { mutableStateOf("") }
+  if (showJoinCompetitionDialog) {
+    AlertDialog(
+        onDismissRequest = { showJoinCompetitionDialog = false },
+        confirmButton = {
+          TextButton(
+              onClick = {
                 firestoreManager.enrollWithInviteCode(userId, joinCompetitionCode) {
+                  loading = true
+                  fetchCompetitions()
+                }
+                showJoinCompetitionDialog = false
+              }) {
+                Text("Join")
+              }
+        },
+        dismissButton = {
+          TextButton(onClick = { showJoinCompetitionDialog = false }) { Text("Cancel") }
+        },
+        title = { Text("Enter invite code") },
+        text = {
+          TextField(
+              value = joinCompetitionCode,
+              onValueChange = { joinCompetitionCode = it },
+              label = { Text("Invite code") },
+              modifier = Modifier.fillMaxWidth())
+        })
+  }
+
+  if (!loading) {
+    Column(modifier = modifier) {
+      Box(modifier = Modifier.weight(1f)) { Leaderboard(competitionId!!, userId) }
+
+      Column(modifier = Modifier.padding(16.dp)) {
+        Row {
+          if (competitionId == null) {
+            MainScreenButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                  // Add a new competition
+                  firestoreManager.createCompetitionAndAddUser(userId) {
                     loading = true
                     fetchCompetitions()
-                }
-            showJoinCompetitionDialog = false
-        }) {
-            Text("Join")
-        } },
-            dismissButton = { TextButton(onClick = {
-                showJoinCompetitionDialog = false
-            }) {
-            Text("Cancel")
-        } },
-            title = { Text("Enter invite code") },
-            text = {
-                TextField(
-                    value = joinCompetitionCode,
-                    onValueChange = { joinCompetitionCode = it },
-                    label = { Text("Invite code") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        )
-    }
+                  }
+                },
+                icon = Icons.Default.AddChart,
+                text = "Start a competition",
+                tonal = false)
+            Spacer(Modifier.width(16.dp))
+            MainScreenButton(
+                modifier = Modifier.weight(1f),
+                onClick = { showJoinCompetitionDialog = true },
+                icon = Icons.Default.Start,
+                text = "Join competition",
+                tonal = false)
+          } else {
+            MainScreenButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                  val sendIntent: Intent =
+                      Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, inviteCode)
 
-    if (!loading) {
-        Column(modifier = modifier) {
-            Box(modifier = Modifier.weight(1f)) {
-                Leaderboard(competitionId!!, userId)
-            }
+                        // Picked up by chosen application if it supports a subject
+                        // field
+                        putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
 
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row {
-                    if (competitionId == null) {
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                // Add a new competition
-                                firestoreManager.createCompetitionAndAddUser(userId) {
-                                    loading = true
-                                    fetchCompetitions()
-                                }
-                            },
-                            icon = Icons.Default.AddChart,
-                            text = "Start a competition",
-                            tonal = false
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                showJoinCompetitionDialog = true
-                            },
-                            icon = Icons.Default.Start,
-                            text = "Join competition",
-                            tonal = false
-                        )
-            } else {
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                val sendIntent: Intent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, inviteCode)
+                        // This is the title of the dialog that the user will see
+                        putExtra(Intent.EXTRA_TITLE, "Competition invite code")
 
-                                    // Picked up by chosen application if it supports a subject field
-                                    putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
+                        type = "text/plain"
+                      }
 
-                                    // This is the title of the dialog that the user will see
-                                    putExtra(Intent.EXTRA_TITLE, "Competition invite code")
-
-                                    type = "text/plain"
-                                }
-
-                                val shareIntent = Intent.createChooser(sendIntent, null)
-                                context.startActivity(shareIntent)
-                            },
-                            icon = Icons.Default.PersonAdd,
-                            text = "Invite friends",
-                            tonal = false
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = { showBottomSheet.value = true },
-                            icon = Icons.Default.Edit,
-                            text = "Edit name",
-                            tonal = true
-                        )
-                    }
-                }
-            }
+                  val shareIntent = Intent.createChooser(sendIntent, null)
+                  context.startActivity(shareIntent)
+                },
+                icon = Icons.Default.PersonAdd,
+                text = "Invite friends",
+                tonal = false)
+            Spacer(Modifier.width(16.dp))
+            MainScreenButton(
+                modifier = Modifier.weight(1f),
+                onClick = { showBottomSheet.value = true },
+                icon = Icons.Default.Edit,
+                text = "Edit name",
+                tonal = true)
+          }
         }
-    } else {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            when {
-                loading -> CircularProgressIndicator()
-            }
-        }
+      }
     }
+  } else {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      when {
+        loading -> CircularProgressIndicator()
+      }
+    }
+  }
 
-    if (showInviteDialog) {
-        AlertDialog(
-            onDismissRequest = { showInviteDialog = false },
-            title = { Text("Invite code") }, text = { Text(inviteCode) },
-            confirmButton = { TextButton(onClick = { showInviteDialog = false }) { Text("OK") } })
-    }
+  if (showInviteDialog) {
+    AlertDialog(
+        onDismissRequest = { showInviteDialog = false },
+        title = { Text("Invite code") },
+        text = { Text(inviteCode) },
+        confirmButton = { TextButton(onClick = { showInviteDialog = false }) { Text("OK") } })
+  }
 }
 
 @Composable
@@ -212,130 +205,106 @@ fun MainScreenButton(
     text: String,
     tonal: Boolean
 ) {
-    if (tonal)
-        FilledTonalButton(
-            shape = RoundedCornerShape(24.dp),
-            contentPadding = PaddingValues(16.dp),
-            modifier = modifier,
-            onClick = onClick
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(text, style = typography.labelLarge)
+  if (tonal)
+      FilledTonalButton(
+          shape = RoundedCornerShape(24.dp),
+          contentPadding = PaddingValues(16.dp),
+          modifier = modifier,
+          onClick = onClick) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+              Spacer(Modifier.height(8.dp))
+              Text(text, style = typography.labelLarge)
             }
-        }
-    else
-        Button(
-            shape = RoundedCornerShape(24.dp),
-            contentPadding = PaddingValues(16.dp),
-            modifier = modifier,
-            onClick = onClick
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(text, style = typography.labelLarge)
+          }
+  else
+      Button(
+          shape = RoundedCornerShape(24.dp),
+          contentPadding = PaddingValues(16.dp),
+          modifier = modifier,
+          onClick = onClick) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+              Spacer(Modifier.height(8.dp))
+              Text(text, style = typography.labelLarge)
             }
-        }
+          }
 }
 
 @Composable
 fun Leaderboard(competitionId: String, userId: String) {
-    var users by remember { mutableStateOf<List<User>>(emptyList()) }
-    val firestoreManager = FirestoreManager()
-    var loading by remember { mutableStateOf(true) }
+  var users by remember { mutableStateOf<List<User>>(emptyList()) }
+  val firestoreManager = FirestoreManager()
+  var loading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(competitionId) {
-        firestoreManager.listenForCompetitionUpdates(competitionId) { newUsers ->
-            users = newUsers.sortedBy { it.score }
-            loading = false
-        }
+  LaunchedEffect(competitionId) {
+    firestoreManager.listenForCompetitionUpdates(competitionId) { newUsers ->
+      users = newUsers.sortedBy { it.score }
+      loading = false
     }
+  }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            itemsIndexed(
-                users,
-                key = { _, user -> user.id }
-            ) { index, user ->
-                Box(modifier = Modifier.animateItem()) {
-                    LeaderboardEntry(
-                        place = index + 1,
-                        user = user,
-                        isMe = user.id == userId
-                    )
-                }
-            }
+  LazyColumn(
+      modifier = Modifier.fillMaxWidth().padding(24.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
+          Box(modifier = Modifier.animateItem()) {
+            LeaderboardEntry(place = index + 1, user = user, isMe = user.id == userId)
+          }
         }
+      }
 }
 
 @Composable
-fun LeaderboardEntry(
-    place: Int,
-    user: User,
-    isMe: Boolean = false
-) {
-    val startTime = user.currentAppSince?.seconds ?: 0
+fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
+  val startTime = user.currentAppSince?.seconds ?: 0
 
-    // number of seconds the user has been using the app
-    var time by remember { mutableLongStateOf(0L) }
+  // number of seconds the user has been using the app
+  var time by remember { mutableLongStateOf(0L) }
 
-    LaunchedEffect(startTime) {
-        while (true) { // isActive is true as long as the coroutine is active
-            val diffInMillis = Timestamp.now().seconds - startTime
-            time = diffInMillis
-            delay(1.seconds)
-        }
+  LaunchedEffect(startTime) {
+    while (true) { // isActive is true as long as the coroutine is active
+      val diffInMillis = Timestamp.now().seconds - startTime
+      time = diffInMillis
+      delay(1.seconds)
     }
+  }
 
-    val fillColor: Color = when {
+  val fillColor: Color =
+      when {
         isMe -> colorScheme.primary
         else -> colorScheme.secondaryContainer
-    }
+      }
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = fillColor),
-        onClick = {},
-        shape = RoundedCornerShape(20.dp)
-    ) {
+  Card(
+      colors = CardDefaults.cardColors(containerColor = fillColor),
+      onClick = {},
+      shape = RoundedCornerShape(20.dp)) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                place.toString(),
-                modifier = Modifier.width(36.dp),
-                style = typography.titleMedium
-            )
-            if (isMe || user.currentApp == null) {
+            verticalAlignment = Alignment.CenterVertically) {
+              Text(
+                  place.toString(),
+                  modifier = Modifier.width(36.dp),
+                  style = typography.titleMedium)
+              if (isMe || user.currentApp == null) {
                 Text(user.name, style = typography.titleMedium)
-            } else {
+              } else {
                 Column {
-                    Text(user.name, style = typography.titleMedium)
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⦿", style = typography.labelSmall)
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "Using ${user.currentApp} for ${formatDuration(time)}",
-                            style = typography.labelSmall,
-                        )
-                    }
+                  Text(user.name, style = typography.titleMedium)
+                  Spacer(Modifier.height(4.dp))
+                  Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⦿", style = typography.labelSmall)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Using ${user.currentApp} for ${formatDuration(time)}",
+                        style = typography.labelSmall,
+                    )
+                  }
                 }
+              }
+              Spacer(Modifier.weight(1f).fillMaxHeight())
+              Text(text = formatDuration(user.score), style = typography.titleMedium)
             }
-            Spacer(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
-            Text(text = formatDuration(user.score), style = typography.titleMedium)
-        }
-    }
+      }
 }

@@ -10,15 +10,13 @@ import androidx.core.graphics.drawable.toBitmap
 import coil.compose.rememberAsyncImagePainter
 import drp.screentime.util.getAppName
 
-
 @Composable
 fun AppIcon(packageName: String) {
-    val packageManager = LocalContext.current.packageManager
-    val icon = packageManager.getApplicationIcon(packageName)
-    val appName = packageManager.getAppName(packageName)
-    Image(
-        painter = rememberAsyncImagePainter(icon.toBitmap()),
-        contentDescription = "Icon for $appName",
-        modifier = Modifier.size(36.dp)
-    )
+  val packageManager = LocalContext.current.packageManager
+  val icon = packageManager.getApplicationIcon(packageName)
+  val appName = packageManager.getAppName(packageName)
+  Image(
+      painter = rememberAsyncImagePainter(icon.toBitmap()),
+      contentDescription = "Icon for $appName",
+      modifier = Modifier.size(36.dp))
 }

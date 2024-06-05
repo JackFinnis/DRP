@@ -27,61 +27,51 @@ import drp.screentime.util.getAppName
 
 @Composable
 fun UsageStatsScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val usageStatsManager =
-        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    val usageStats = UsageStatsProcessor(context.packageManager, usageStatsManager)
-    val usageStatsList = usageStats.getApplicationUsageStats()
+  val context = LocalContext.current
+  val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+  val usageStats = UsageStatsProcessor(context.packageManager, usageStatsManager)
+  val usageStatsList = usageStats.getApplicationUsageStats()
 
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        if (usageStatsList.isEmpty()) {
-            Text(text = "No usage stats available. Please enable usage access in system settings.")
-            Button(onClick = { openUsageAccessSettings(context) }) {
-                Text(text = "Open Usage Access Settings")
-            }
-        } else {
-            usageStatsList.toList().sortedByDescending { it.second }.forEach { usageStat ->
-                UsageStatItem(usageStat.first, usageStat.second)
-            }
-        }
+  Column(modifier = modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+    if (usageStatsList.isEmpty()) {
+      Text(text = "No usage stats available. Please enable usage access in system settings.")
+      Button(onClick = { openUsageAccessSettings(context) }) {
+        Text(text = "Open Usage Access Settings")
+      }
+    } else {
+      usageStatsList
+          .toList()
+          .sortedByDescending { it.second }
+          .forEach { usageStat -> UsageStatItem(usageStat.first, usageStat.second) }
     }
+  }
 }
 
 @Composable
 fun UsageStatItem(packageName: String, usage: Long) {
-    val pm = LocalContext.current.packageManager
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.padding(end = 16.dp)) { AppIcon(packageName) }
-            Text(text = pm.getAppName(packageName).trim())
-            Spacer(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
-            Text(text = formatDuration(usage))
-        }
+  val pm = LocalContext.current.packageManager
+  Column(modifier = Modifier.padding(bottom = 8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Box(modifier = Modifier.padding(end = 16.dp)) { AppIcon(packageName) }
+      Text(text = pm.getAppName(packageName).trim())
+      Spacer(Modifier.weight(1f).fillMaxHeight())
+      Text(text = formatDuration(usage))
     }
+  }
 }
 
 fun openUsageAccessSettings(context: Context) {
-    try {
-        // Try to open Usage Access settings but not all devices have it
-        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            data = Uri.fromParts("package", context.packageName, null)
+  try {
+    // Try to open Usage Access settings but not all devices have it
+    val intent =
+        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          data = Uri.fromParts("package", context.packageName, null)
         }
-        context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
-        val generalSettingsIntent = Intent(Settings.ACTION_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(generalSettingsIntent)
-    }
+    context.startActivity(intent)
+  } catch (e: ActivityNotFoundException) {
+    val generalSettingsIntent =
+        Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+    context.startActivity(generalSettingsIntent)
+  }
 }
-
-

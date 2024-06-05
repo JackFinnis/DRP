@@ -5,8 +5,10 @@ import androidx.compose.ui.text.font.FontWeight
 
 private val defaultTypography = Typography()
 
-val AppTypography = Typography(
-    headlineMedium = defaultTypography.headlineMedium.copy(
-        fontWeight = FontWeight.Medium,
-    ),
-)
+val AppTypography =
+    Typography(
+        headlineMedium =
+            defaultTypography.headlineMedium.copy(
+                fontWeight = FontWeight.Medium,
+            ),
+    )

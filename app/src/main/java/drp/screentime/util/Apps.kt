@@ -8,32 +8,28 @@ fun PackageManager.getAppName(packageName: String): String =
     this.getApplicationInfo(packageName, 0).loadLabel(this).toString()
 
 fun PackageManager.isSystemApp(packageName: String): Boolean {
-    val sysSig = getAppSignatureHash("android")
-    val appSig = getAppSignatureHash(packageName)
-    return sysSig == appSig
+  val sysSig = getAppSignatureHash("android")
+  val appSig = getAppSignatureHash(packageName)
+  return sysSig == appSig
 }
 
 fun PackageManager.getHomeScreenLaunchers(): List<String> {
-    val mainIntent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
-    val homeApps = queryIntentActivities(mainIntent, PackageManager.MATCH_DEFAULT_ONLY)
-    return homeApps.map { it.activityInfo.packageName }
+  val mainIntent = Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+  val homeApps = queryIntentActivities(mainIntent, PackageManager.MATCH_DEFAULT_ONLY)
+  return homeApps.map { it.activityInfo.packageName }
 }
 
 fun PackageManager.isTrackedApp(packageName: String): Boolean {
-    return !isSystemApp(packageName) && !getHomeScreenLaunchers().contains(packageName)
+  return !isSystemApp(packageName) && !getHomeScreenLaunchers().contains(packageName)
 }
 
 fun PackageManager.getAppSignatureHash(packageName: String): Int {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        val sig = this.getPackageInfo(
-            packageName, PackageManager.GET_SIGNING_CERTIFICATES
-        ).signingInfo
-        if (sig.hasMultipleSigners()) sig.apkContentsSigners.contentDeepHashCode()
-        else sig.signingCertificateHistory.contentDeepHashCode()
-    } else {
-        @Suppress("DEPRECATION") this.getPackageInfo(
-            packageName, PackageManager.GET_SIGNATURES
-        ).signatures.contentDeepHashCode()
-    }
+  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    val sig = this.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo
+    if (sig.hasMultipleSigners()) sig.apkContentsSigners.contentDeepHashCode()
+    else sig.signingCertificateHistory.contentDeepHashCode()
+  } else {
+    @Suppress("DEPRECATION")
+    this.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures.contentDeepHashCode()
+  }
 }
-

@@ -34,57 +34,62 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
  * A button that checks if a permission is enabled and opens the settings if it is not.
+ *
  * @param intent The intent to launch where the permission can be enabled.
  * @param isEnabled A function that checks if the permission is enabled.
  */
 @Composable
 fun PermissionCheckButton(intent: Intent, isEnabled: (Context) -> Boolean) {
-    val context = LocalContext.current
-    var hasPermission by remember { mutableStateOf(isEnabled(context)) }
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            hasPermission = isEnabled(context)
-        }
+  val context = LocalContext.current
+  var hasPermission by remember { mutableStateOf(isEnabled(context)) }
+  val launcher =
+      rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        hasPermission = isEnabled(context)
+      }
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(key1 = lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                hasPermission = isEnabled(context)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+  val lifecycleOwner = LocalLifecycleOwner.current
+  DisposableEffect(key1 = lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        hasPermission = isEnabled(context)
+      }
     }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
 
-    val hapticFeedback = LocalHapticFeedback.current
-    Button(
-        onClick = {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-            launcher.launch(intent.apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+  val hapticFeedback = LocalHapticFeedback.current
+  Button(
+      onClick = {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        launcher.launch(
+            intent.apply {
+              addFlags(
+                  Intent.FLAG_ACTIVITY_NEW_TASK or
+                      Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                      Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             })
-        }, colors = ButtonDefaults.buttonColors(
-            containerColor = if (hasPermission) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.error
-        )
-    ) {
+      },
+      colors =
+          ButtonDefaults.buttonColors(
+              containerColor =
+                  if (hasPermission) MaterialTheme.colorScheme.primaryContainer
+                  else MaterialTheme.colorScheme.error)) {
         if (hasPermission) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Enabled",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+          Icon(
+              imageVector = Icons.Default.Check,
+              contentDescription = "Enabled",
+              tint = MaterialTheme.colorScheme.onPrimaryContainer,
+          )
         } else {
-            Text("Enable", color = MaterialTheme.colorScheme.onError)
+          Text("Enable", color = MaterialTheme.colorScheme.onError)
         }
-    }
+      }
 }
-
 
 /**
  * A row that displays a permission check button.
+ *
  * @param intent The intent to launch where the permission can be enabled.
  * @param isEnabled A function that checks if the permission is enabled.
  * @param description A short tagline describing the permission.
@@ -92,28 +97,24 @@ fun PermissionCheckButton(intent: Intent, isEnabled: (Context) -> Boolean) {
  */
 @Composable
 fun PermissionCheckRow(
-    intent: Intent, isEnabled: (Context) -> Boolean, description: String, icon: ImageVector
+    intent: Intent,
+    isEnabled: (Context) -> Boolean,
+    description: String,
+    icon: ImageVector
 ) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+  Row(
+      modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(end = 8.dp)
-        )
+            modifier = Modifier.padding(end = 8.dp))
 
-        Text(
-            text = description, modifier = Modifier.padding(start = 8.dp)
-        )
+        Text(text = description, modifier = Modifier.padding(start = 8.dp))
 
         Spacer(modifier = Modifier.weight(1f))
 
         PermissionCheckButton(intent, isEnabled)
-    }
+      }
 }
-

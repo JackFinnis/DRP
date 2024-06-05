@@ -8,30 +8,28 @@ import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import kotlinx.coroutines.flow.firstOrNull
 
-class ScreenTimeUploadWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
-) : CoroutineWorker(appContext, workerParams) {
+class ScreenTimeUploadWorker(appContext: Context, workerParams: WorkerParameters) :
+    CoroutineWorker(appContext, workerParams) {
 
-    companion object {
-        const val WORKER_NAME_TAG = "screenTimeUploadWork"
-    }
+  companion object {
+    const val WORKER_NAME_TAG = "screenTimeUploadWork"
+  }
 
-    override suspend fun doWork(): Result {
-        // Fetch user id and usage stats
-        val dataStoreManager = DataStoreManager(applicationContext)
-        val usageStatsProcessor = UsageStatsProcessor(
+  override suspend fun doWork(): Result {
+    // Fetch user id and usage stats
+    val dataStoreManager = DataStoreManager(applicationContext)
+    val usageStatsProcessor =
+        UsageStatsProcessor(
             applicationContext.packageManager,
-            applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        )
-        val firestoreManager = FirestoreManager()
+            applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager)
+    val firestoreManager = FirestoreManager()
 
-        dataStoreManager.userIdFlow.firstOrNull()?.let { userId ->
-            val usageStats = usageStatsProcessor.getApplicationUsageStats()
-            firestoreManager.uploadUsageData(userId, usageStats) {}
-            firestoreManager.updateScore(userId, usageStats.values.sum()) {}
-        }
-
-        return Result.success()
+    dataStoreManager.userIdFlow.firstOrNull()?.let { userId ->
+      val usageStats = usageStatsProcessor.getApplicationUsageStats()
+      firestoreManager.uploadUsageData(userId, usageStats) {}
+      firestoreManager.updateScore(userId, usageStats.values.sum()) {}
     }
+
+    return Result.success()
+  }
 }

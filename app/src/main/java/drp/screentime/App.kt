@@ -15,33 +15,35 @@ import java.util.concurrent.TimeUnit
 
 class App : Application() {
 
-    override fun onCreate() {
-        super.onCreate()
-        enqueueStatsUploadWorker()
-    }
+  override fun onCreate() {
+    super.onCreate()
+    enqueueStatsUploadWorker()
+  }
 
-    private fun enqueueStatsUploadWorker() {
-        val constraints = Constraints.Builder()
+  private fun enqueueStatsUploadWorker() {
+    val constraints =
+        Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .setRequiresDeviceIdle(false) // Avoid redundancy, workers already run when unlocked
             .build()
 
-        val periodicWorkRequest = PeriodicWorkRequestBuilder<ScreenTimeUploadWorker>(
-            15, TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
+    val periodicWorkRequest =
+        PeriodicWorkRequestBuilder<ScreenTimeUploadWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
 
-        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+    WorkManager.getInstance(applicationContext)
+        .enqueueUniquePeriodicWork(
             ScreenTimeUploadWorker.WORKER_NAME_TAG,
             ExistingPeriodicWorkPolicy.UPDATE,
-            periodicWorkRequest
-        )
-    }
+            periodicWorkRequest)
+  }
 
-    companion object {
-        fun areAllPermissionsGranted(context: Context): Boolean {
-            return UsageStatsProcessor.hasUsageStatsAccess(context)
-                    && AppUsageTrackingService.isEnabled(context)
-                    && context.areAppNotificationsEnabled()
-        }
+  companion object {
+    fun areAllPermissionsGranted(context: Context): Boolean {
+      return UsageStatsProcessor.hasUsageStatsAccess(context) &&
+          AppUsageTrackingService.isEnabled(context) &&
+          context.areAppNotificationsEnabled()
     }
+  }
 }

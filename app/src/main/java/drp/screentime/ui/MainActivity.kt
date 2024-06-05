@@ -41,113 +41,112 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    enableEdgeToEdge()
 
-        if (!App.areAllPermissionsGranted(this)) {
-            val intent = Intent(this, SetupActivity::class.java)
-            startActivity(intent)
-            finish()
-            return
-        }
-
-        setContent {
-            AppTheme {
-                MainScreen()
-            }
-        }
+    if (!App.areAllPermissionsGranted(this)) {
+      val intent = Intent(this, SetupActivity::class.java)
+      startActivity(intent)
+      finish()
+      return
     }
+
+    setContent { AppTheme { MainScreen() } }
+  }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    var showAppBar = remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    val showBottomSheet = remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val dataStoreManager = remember { DataStoreManager(context) }
-    val firestoreManager = remember { FirestoreManager() }
-    val scope = rememberCoroutineScope()
+  var showAppBar = remember { mutableStateOf(false) }
+  val sheetState = rememberModalBottomSheetState()
+  val showBottomSheet = remember { mutableStateOf(false) }
+  val context = LocalContext.current
+  val dataStoreManager = remember { DataStoreManager(context) }
+  val firestoreManager = remember { FirestoreManager() }
+  val scope = rememberCoroutineScope()
 
-    var userId by remember { mutableStateOf<String?>(null) }
+  var userId by remember { mutableStateOf<String?>(null) }
 
-    val usageStatsProcessor = UsageStatsProcessor(
-        context.packageManager,
-        context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-    )
+  val usageStatsProcessor =
+      UsageStatsProcessor(
+          context.packageManager,
+          context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager)
 
-    LaunchedEffect(Unit) {
-        // Load the user ID from DataStore
-        dataStoreManager.userIdFlow.collect { storedUserId ->
-            if (storedUserId == null) {
-                createUser(firestoreManager, scope, dataStoreManager)
-            } else {
-                // Verify the user exists in Firestore
-                firestoreManager.getUserData(storedUserId) { user ->
-                    if (user == null) {
-                        // User doesn't exist, create a new user
-                        createUser(firestoreManager, scope, dataStoreManager)
-                    } else {
-                        userId = storedUserId
-                        postScreenTimeToDb(storedUserId, usageStatsProcessor, user)
-                    }
-                }
-            }
+  LaunchedEffect(Unit) {
+    // Load the user ID from DataStore
+    dataStoreManager.userIdFlow.collect { storedUserId ->
+      if (storedUserId == null) {
+        createUser(firestoreManager, scope, dataStoreManager)
+      } else {
+        // Verify the user exists in Firestore
+        firestoreManager.getUserData(storedUserId) { user ->
+          if (user == null) {
+            // User doesn't exist, create a new user
+            createUser(firestoreManager, scope, dataStoreManager)
+          } else {
+            userId = storedUserId
+            postScreenTimeToDb(storedUserId, usageStatsProcessor, user)
+          }
         }
+      }
     }
+  }
 
-    if (userId == null) Scaffold {
+  if (userId == null)
+      Scaffold {
         Box(
-            modifier = Modifier
-                .padding(it)
-                .fillMaxSize(),
-            contentAlignment = androidx.compose.ui.Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    } else {
-        Scaffold(
-            topBar = {
-                LargeTopAppBar(title = {
-                    if (showAppBar.value) Text(
+            modifier = Modifier.padding(it).fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center) {
+              CircularProgressIndicator()
+            }
+      }
+  else {
+    Scaffold(
+        topBar = {
+          LargeTopAppBar(
+              title = {
+                if (showAppBar.value)
+                    Text(
                         "Leaderboard",
                         color = colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
                     )
-                })
-            },
-        ) { contentPadding ->
-            UserCompetitionsScreen(
-                modifier = Modifier.padding(contentPadding),
-                userId = userId!!,
-                showBottomSheet = showBottomSheet,
-                showAppBar = showAppBar
-            )
-            if (showBottomSheet.value) {
-                SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
-            }
-        }
+              })
+        },
+    ) { contentPadding ->
+      UserCompetitionsScreen(
+          modifier = Modifier.padding(contentPadding),
+          userId = userId!!,
+          showBottomSheet = showBottomSheet,
+          showAppBar = showAppBar)
+      if (showBottomSheet.value) {
+        SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
+      }
     }
+  }
 }
 
 private fun createUser(
-    firestoreManager: FirestoreManager, scope: CoroutineScope, dataStoreManager: DataStoreManager
+    firestoreManager: FirestoreManager,
+    scope: CoroutineScope,
+    dataStoreManager: DataStoreManager
 ) {
-    val name = generateUserName()
-    firestoreManager.addUser(name) { newUserId ->
-        newUserId?.let {
-            scope.launch {
-                dataStoreManager.saveUserId(it)
-                dataStoreManager.saveUserName(name)
-            }
-        }
+  val name = generateUserName()
+  firestoreManager.addUser(name) { newUserId ->
+    newUserId?.let {
+      scope.launch {
+        dataStoreManager.saveUserId(it)
+        dataStoreManager.saveUserName(name)
+      }
     }
+  }
 }
 
 fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor, user: User) {
-    FirestoreManager().updateScore(userId, usageStatsProcessor.getTotalUsage()) {}
+  FirestoreManager().updateScore(userId, usageStatsProcessor.getTotalUsage()) {}
 
-    val usageStats = usageStatsProcessor.getApplicationUsageStats()
-    FirestoreManager().uploadUsageData(userId, usageStats) {}
+  val usageStats = usageStatsProcessor.getApplicationUsageStats()
+  FirestoreManager().uploadUsageData(userId, usageStats) {}
 }
