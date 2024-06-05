@@ -51,6 +51,8 @@ import com.google.firebase.Timestamp
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 
 @ExperimentalMaterial3Api
@@ -59,7 +61,8 @@ fun UserCompetitionsScreen(
     modifier: Modifier = Modifier,
     userId: String,
     firestoreManager: FirestoreManager = FirestoreManager(),
-    showBottomSheet: MutableState<Boolean>
+    showBottomSheet: MutableState<Boolean>,
+    showAppBar: MutableState<Boolean>
 ) {
     var competitionId by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -74,6 +77,7 @@ fun UserCompetitionsScreen(
     fun fetchCompetitions() {
         firestoreManager.listenForUserDataChanges(userId) { user ->
             competitionId = user?.competitionId
+            showAppBar.value = competitionId != null
             loading = false
             fullLoading = false
 
@@ -288,9 +292,20 @@ fun LeaderboardEntry(
 ) {
     val isMe = false
 
+    val startTime = user.currentAppSince?.seconds ?: 0
+
     // number of seconds the user has been using the app
-    val time =
-        user.currentAppSince?.seconds?.let { user.currentAppSince.seconds - Timestamp.now().seconds }
+    var time by remember {
+        mutableStateOf(0L)
+    }
+
+    LaunchedEffect(startTime) {
+        while (true) { // isActive is true as long as the coroutine is active
+            val diffInMillis = Timestamp.now().seconds - startTime
+            time = diffInMillis
+            delay(1.seconds)
+        }
+    }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -338,7 +353,7 @@ fun LeaderboardEntry(
                             else MaterialTheme.colorScheme.onSecondaryContainer)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Using ${user.currentApp} for ${formatDuration(time ?: 0)}",
+                            "Using ${user.currentApp} for ${formatDuration(time)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isMe) MaterialTheme.colorScheme.onPrimary
                             else MaterialTheme.colorScheme.onSecondaryContainer

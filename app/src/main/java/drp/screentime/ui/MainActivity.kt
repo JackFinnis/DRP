@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -25,6 +26,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.example.compose.AppTheme
 import drp.screentime.App
 import drp.screentime.firestore.FirestoreManager
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
+    var showAppBar = remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val showBottomSheet = remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -103,9 +107,23 @@ fun MainScreen() {
         ) {
             CircularProgressIndicator()
         }
-    } else Scaffold(topBar = { LargeTopAppBar(title = { Text("Leaderboard") }) }) { contentPadding ->
+    } else Scaffold(topBar = {
+        LargeTopAppBar(title = {
+            if (showAppBar.value) Text(
+                "Leaderboard",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(8.dp, 0.dp),
+                fontWeight = FontWeight.Medium
+            )
+        })
+    }) { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
-            UserCompetitionsScreen(userId = userId!!, showBottomSheet = showBottomSheet)
+            UserCompetitionsScreen(
+                userId = userId!!,
+                showBottomSheet = showBottomSheet,
+                showAppBar = showAppBar
+            )
         }
         if (showBottomSheet.value) {
             SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
