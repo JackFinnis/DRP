@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
+import drp.screentime.util.getAppName
 import drp.screentime.util.isTrackedApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,7 @@ class AppUsageTrackingService : AccessibilityService() {
             // Avoids unnecessary updates
             if (app == currentApp) return
 
-            currentApp = app
+            currentApp = app?.let { packageManager.getAppName(it) }
             currentAppOpened = openTime
 
             db.updateCurrentApp(userId, currentApp, currentAppOpened) { success ->
