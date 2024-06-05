@@ -29,7 +29,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -238,7 +239,7 @@ fun MainScreenButton(
             ) {
                 Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
                 Spacer(Modifier.height(8.dp))
-                Text(text, style = MaterialTheme.typography.labelLarge)
+                Text(text, style = typography.labelLarge)
             }
         }
     else
@@ -253,7 +254,7 @@ fun MainScreenButton(
             ) {
                 Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
                 Spacer(Modifier.height(8.dp))
-                Text(text, style = MaterialTheme.typography.labelLarge)
+                Text(text, style = typography.labelLarge)
             }
         }
 }
@@ -278,8 +279,17 @@ fun Leaderboard(competitionId: String, userId: String) {
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            itemsIndexed(users) { index, user ->
-                LeaderboardEntry(index + 1, user)
+            itemsIndexed(
+                users,
+                key = { _, user -> user.id }
+            ) { index, user ->
+                Box(modifier = Modifier.animateItem()) {
+                    LeaderboardEntry(
+                        place = index + 1,
+                        user = user,
+                        isMe = user.id == userId
+                    )
+                }
             }
         }
     }
@@ -288,10 +298,9 @@ fun Leaderboard(competitionId: String, userId: String) {
 @Composable
 fun LeaderboardEntry(
     place: Int,
-    user: User
+    user: User,
+    isMe: Boolean = false
 ) {
-    val isMe = false
-
     val startTime = user.currentAppSince?.seconds ?: 0
 
     // number of seconds the user has been using the app
@@ -310,8 +319,8 @@ fun LeaderboardEntry(
     Card(
         colors = CardDefaults.cardColors(
             containerColor =
-            if (isMe) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.secondaryContainer
+            if (isMe) colorScheme.primary
+            else colorScheme.secondaryContainer
         ),
         onClick = {},
         shape = RoundedCornerShape(20.dp)
@@ -323,41 +332,44 @@ fun LeaderboardEntry(
             Text(
                 place.toString(),
                 modifier = Modifier.width(36.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.secondary
+                style = typography.labelMedium,
+                color = if (isMe) colorScheme.onPrimary
+                else colorScheme.secondary
             )
             if (user.currentApp == null)
                 Text(
                     user.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSecondaryContainer
+                    style = typography.labelMedium,
+                    color = if (isMe) colorScheme.onPrimary
+                    else colorScheme.onSecondaryContainer
                 )
             else
                 Column {
                     Text(
                         user.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onSecondaryContainer
+                        style = typography.labelMedium,
+                        color = if (isMe) colorScheme.onPrimary
+                        else colorScheme.onSecondaryContainer
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "⦿",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSecondaryContainer)
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "Using ${user.currentApp} for ${formatDuration(time)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                    if (!isMe) {
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "⦿",
+                                style = typography.labelSmall,
+                                color = if (isMe) colorScheme.onPrimary
+                                else colorScheme.onSecondaryContainer
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Using ${user.currentApp} for ${formatDuration(time)}",
+                                style = typography.labelSmall,
+                                color = if (isMe) colorScheme.onPrimary
+                                else colorScheme.onSecondaryContainer
+                            )
+                        }
                     }
                 }
             Spacer(
@@ -367,9 +379,9 @@ fun LeaderboardEntry(
             )
             Text(
                 text = formatDuration(user.score),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isMe) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSecondaryContainer
+                style = typography.labelMedium,
+                color = if (isMe) colorScheme.onPrimary
+                else colorScheme.onSecondaryContainer
             )
         }
     }
