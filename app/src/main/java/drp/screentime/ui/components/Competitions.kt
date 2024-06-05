@@ -1,5 +1,6 @@
 package drp.screentime.ui.components
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -44,13 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
-import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
+
 
 @ExperimentalMaterial3Api
 @Composable
@@ -60,7 +61,7 @@ fun UserCompetitionsScreen(
     firestoreManager: FirestoreManager = FirestoreManager(),
     showBottomSheet: MutableState<Boolean>
 ) {
-    var competitions by remember { mutableStateOf<List<Competition>>(emptyList()) }
+    var competitionId by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var fullLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -68,25 +69,32 @@ fun UserCompetitionsScreen(
     var showJoinCompetitionDialog by remember { mutableStateOf(false) }
     var inviteCode by remember { mutableStateOf("") }
     var showInviteDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     fun fetchCompetitions() {
-        firestoreManager.getUserData(userId) { user ->
-            // todo bad
-            competitions = listOf(Competition(id = user?.competitionId ?: "", inviteCode = "ABCDE"))
+        firestoreManager.listenForUserDataChanges(userId) { user ->
+            competitionId = user?.competitionId
             loading = false
             fullLoading = false
+
+            if (competitionId != null) {
+                firestoreManager.listenForCompetitionDataChanges(competitionId!!) { competition ->
+                    inviteCode = competition?.inviteCode ?: ""
+                }
+            }
         }
     }
 
     // Initial fetch
     LaunchedEffect(userId) { fetchCompetitions() }
 
+    var joinCompetitionCode by remember { mutableStateOf("") }
     if (showJoinCompetitionDialog) {
         AlertDialog(
             onDismissRequest = { showJoinCompetitionDialog = false },
             confirmButton = { TextButton(onClick = {
             // Handle submit action
-                firestoreManager.enrollWithInviteCode(userId, inviteCode) {
+                firestoreManager.enrollWithInviteCode(userId, joinCompetitionCode) {
                     fullLoading = true
                     loading = true
                     fetchCompetitions()
@@ -100,12 +108,12 @@ fun UserCompetitionsScreen(
             }) {
             Text("Cancel")
         } },
-            title = { Text("Enter Join Code") },
+            title = { Text("Enter invite code") },
             text = {
                 TextField(
-                    value = inviteCode,
-                    onValueChange = { inviteCode = it },
-                    label = { Text("Invite Code") },
+                    value = joinCompetitionCode,
+                    onValueChange = { joinCompetitionCode = it },
+                    label = { Text("Invite code") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -115,7 +123,11 @@ fun UserCompetitionsScreen(
     if (!(loading && fullLoading) && error == null) {
         Column(modifier = modifier) {
             Box(modifier = Modifier.weight(1f)) {
-                if (!loading) {
+                if (loading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (competitionId != null) {
                     PullToRefreshBox(
                         isRefreshing = loading, onRefresh = {
                             loading = true
@@ -123,18 +135,15 @@ fun UserCompetitionsScreen(
                         }, modifier = Modifier.fillMaxSize(), state = pullRefreshState
                     ) {
                         Box(modifier = Modifier) {
-                            CompetitionList(competitions, firestoreManager, userId)
+                            Leaderboard(competitionId!!, userId)
                         }
-                    }
-                } else {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
                     }
                 }
             }
-            if (competitions.isEmpty()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row {
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row {
+                    if (competitionId == null) {
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = {
@@ -146,7 +155,7 @@ fun UserCompetitionsScreen(
                                 }
                             },
                             icon = Icons.Filled.AddCircle,
-                            text = "Add Competition",
+                            text = "Start Competition",
                             tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
@@ -159,25 +168,18 @@ fun UserCompetitionsScreen(
                             text = "Join Competition",
                             tonal = false
                         )
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Row {
-                        MainScreenButton(
-                            modifier = Modifier.weight(1f),
-                            onClick = { showBottomSheet.value = true },
-                            icon = Icons.Filled.Face,
-                            text = "Edit Profile",
-                            tonal = true
-                        )
-                    }
-                }
             } else {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row {
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = {
-                                showInviteDialog = true
+                                val sendIntent: Intent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, inviteCode)
+                                    type = "text/plain"
+                                }
+
+                                val shareIntent = Intent.createChooser(sendIntent, null)
+                                context.startActivity(shareIntent)
                             },
                             icon = Icons.Filled.AddCircle,
                             text = "Invite People",
@@ -207,8 +209,7 @@ fun UserCompetitionsScreen(
     if (showInviteDialog) {
         AlertDialog(
             onDismissRequest = { showInviteDialog = false },
-            title = { Text("Invite code") },
-            text = { Text(if (competitions.isEmpty()) "" else competitions[0].inviteCode) },
+            title = { Text("Invite code") }, text = { Text(inviteCode) },
             confirmButton = { TextButton(onClick = { showInviteDialog = false }) { Text("OK") } })
     }
 }
@@ -254,31 +255,13 @@ fun MainScreenButton(
 }
 
 @Composable
-fun CompetitionList(competitions: List<Competition>, firestoreManager: FirestoreManager, userId: String) {
-    if (competitions.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "Not enrolled in any competitions")
-        }
-    } else {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(competitions) { competition ->
-                CompetitionItem(competition, userId)
-            }
-        }
-    }
-}
-
-@Composable
-fun CompetitionItem(competition: Competition, userId: String) {
+fun Leaderboard(competitionId: String, userId: String) {
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
     val firestoreManager = FirestoreManager()
     var loading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(competition.id) {
-        firestoreManager.listenForCompetitionUpdates(competition.id) { newUsers ->
+    LaunchedEffect(competitionId) {
+        firestoreManager.listenForCompetitionUpdates(competitionId) { newUsers ->
             users = newUsers.sortedBy { it.score }
             loading = false
         }
@@ -287,24 +270,12 @@ fun CompetitionItem(competition: Competition, userId: String) {
     Box(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Leaderboard",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(0.dp, 8.dp, 0.dp, 0.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (users.isEmpty()) {
-                Text(text = "No leaderboard data available")
-            } else {
-                users.forEachIndexed { index, user ->
-                    LeaderboardEntry(index + 1, user)
-                }
+            itemsIndexed(users) { index, user ->
+                LeaderboardEntry(index + 1, user)
             }
         }
     }
@@ -315,10 +286,11 @@ fun LeaderboardEntry(
     place: Int,
     user: User
 ) {
-    val isMe = false;
+    val isMe = false
 
     // number of seconds the user has been using the app
-    val time = user.currentAppSince?.seconds?.let { user.currentAppSince.seconds - Timestamp.now().seconds }
+    val time =
+        user.currentAppSince?.seconds?.let { user.currentAppSince.seconds - Timestamp.now().seconds }
 
     Card(
         colors = CardDefaults.cardColors(

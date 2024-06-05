@@ -50,7 +50,11 @@ class FirestoreManager {
     }
 
     private fun createCompetition(onComplete: (String?) -> Unit) =
-        addDocument(Competition.COLLECTION_NAME, Competition(inviteCode = generateInviteCode()), onComplete)
+        addDocument(
+            Competition.COLLECTION_NAME,
+            Competition(inviteCode = generateInviteCode()),
+            onComplete
+        )
 
     fun createCompetitionAndAddUser(userId: String, onComplete: (Boolean) -> Unit) {
         createCompetition { competitionId ->
@@ -66,15 +70,39 @@ class FirestoreManager {
             .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-    fun listenForCompetitionUpdates(competitionId: String, onResult: (List<User>) -> Unit) {
-        db.collection(User.COLLECTION_NAME).whereEqualTo(User.FIELD_COMPETITION_ID, competitionId).addSnapshotListener { snapshot, e ->
-            if (e != null || snapshot == null) {
-                onResult(emptyList())
+    fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit) {
+        db.collection(User.COLLECTION_NAME).document(userId).addSnapshotListener { snapshot, e ->
+            if (e != null || snapshot == null || !snapshot.exists()) {
+                onResult(null)
                 return@addSnapshotListener
             }
-            val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
-            onResult(users)
+            val user = snapshot.toObject(User::class.java)
+            onResult(user)
         }
+    }
+
+    fun listenForCompetitionDataChanges(competitionId: String, onResult: (Competition?) -> Unit) {
+        db.collection(Competition.COLLECTION_NAME).document(competitionId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null || !snapshot.exists()) {
+                    onResult(null)
+                    return@addSnapshotListener
+                }
+                val competition = snapshot.toObject(Competition::class.java)
+                onResult(competition)
+            }
+    }
+
+    fun listenForCompetitionUpdates(competitionId: String, onResult: (List<User>) -> Unit) {
+        db.collection(User.COLLECTION_NAME).whereEqualTo(User.FIELD_COMPETITION_ID, competitionId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) {
+                    onResult(emptyList())
+                    return@addSnapshotListener
+                }
+                val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+                onResult(users)
+            }
     }
 
     fun uploadUsageData(

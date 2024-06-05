@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -101,7 +103,7 @@ fun MainScreen() {
         ) {
             CircularProgressIndicator()
         }
-    } else Scaffold { contentPadding ->
+    } else Scaffold(topBar = { LargeTopAppBar(title = { Text("Leaderboard") }) }) { contentPadding ->
         Box(modifier = Modifier.padding(contentPadding)) {
             UserCompetitionsScreen(userId = userId!!, showBottomSheet = showBottomSheet)
         }
