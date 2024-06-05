@@ -222,8 +222,8 @@ fun MainScreenButton(
 ) {
     if (tonal)
         FilledTonalButton(
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(12.dp),
+            shape = RoundedCornerShape(24.dp),
+            contentPadding = PaddingValues(16.dp),
             modifier = modifier,
             onClick = onClick
         ) {
@@ -231,14 +231,14 @@ fun MainScreenButton(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(text, style = MaterialTheme.typography.labelLarge)
             }
         }
     else
         Button(
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(12.dp),
+            shape = RoundedCornerShape(24.dp),
+            contentPadding = PaddingValues(16.dp),
             modifier = modifier,
             onClick = onClick
         ) {
@@ -246,7 +246,7 @@ fun MainScreenButton(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(text, style = MaterialTheme.typography.labelLarge)
             }
         }
@@ -290,7 +290,8 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
             if (competition.leaderboard.isEmpty()) {
                 Text(text = "No leaderboard data available")
             } else {
-                competition.leaderboard.toList().forEachIndexed { index, (user, score) ->
+                competition.leaderboard.toList().sortedBy { pair: Pair<String, Int> -> pair.second }
+                    .forEachIndexed { index, (user, score) ->
                     LeaderboardEntry(index + 1, user, score, user == userId)
                 }
             }
@@ -324,10 +325,11 @@ fun LeaderboardEntry(
             if (isMe) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.secondaryContainer
         ),
-        onClick = {}
+        onClick = {},
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp, 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
