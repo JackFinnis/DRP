@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -26,7 +26,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.compose.AppTheme
 import drp.screentime.App
@@ -111,10 +110,8 @@ fun MainScreen() {
         LargeTopAppBar(title = {
             if (showAppBar.value) Text(
                 "Leaderboard",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(8.dp, 0.dp),
-                fontWeight = FontWeight.Medium
+                color = colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
             )
         })
     }) { contentPadding ->

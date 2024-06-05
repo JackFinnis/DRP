@@ -40,11 +40,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -67,8 +69,6 @@ fun UserCompetitionsScreen(
 ) {
     var competitionId by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
-    var fullLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
     val pullRefreshState = rememberPullToRefreshState()
     var showJoinCompetitionDialog by remember { mutableStateOf(false) }
     var inviteCode by remember { mutableStateOf("") }
@@ -80,7 +80,6 @@ fun UserCompetitionsScreen(
             competitionId = user?.competitionId
             showAppBar.value = competitionId != null
             loading = false
-            fullLoading = false
 
             if (competitionId != null) {
                 firestoreManager.listenForCompetitionDataChanges(competitionId!!) { competition ->
@@ -98,9 +97,7 @@ fun UserCompetitionsScreen(
         AlertDialog(
             onDismissRequest = { showJoinCompetitionDialog = false },
             confirmButton = { TextButton(onClick = {
-            // Handle submit action
                 firestoreManager.enrollWithInviteCode(userId, joinCompetitionCode) {
-                    fullLoading = true
                     loading = true
                     fetchCompetitions()
                 }
@@ -125,7 +122,7 @@ fun UserCompetitionsScreen(
         )
     }
 
-    if (!(loading && fullLoading) && error == null) {
+    if (!loading) {
         Column(modifier = modifier) {
             Box(modifier = Modifier.weight(1f)) {
                 if (loading) {
@@ -154,7 +151,6 @@ fun UserCompetitionsScreen(
                             onClick = {
                                 // Add a new competition
                                 firestoreManager.createCompetitionAndAddUser(userId) {
-                                    fullLoading = true
                                     loading = true
                                     fetchCompetitions()
                                 }
@@ -206,7 +202,6 @@ fun UserCompetitionsScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             when {
                 loading -> CircularProgressIndicator()
-                error != null -> Text(text = error!!)
             }
         }
     }
@@ -304,9 +299,7 @@ fun LeaderboardEntry(
     val startTime = user.currentAppSince?.seconds ?: 0
 
     // number of seconds the user has been using the app
-    var time by remember {
-        mutableStateOf(0L)
-    }
+    var time by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(startTime) {
         while (true) { // isActive is true as long as the coroutine is active
@@ -316,12 +309,13 @@ fun LeaderboardEntry(
         }
     }
 
+    val fillColor: Color = when {
+        isMe -> colorScheme.primary
+        else -> colorScheme.secondaryContainer
+    }
+
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor =
-            if (isMe) colorScheme.primary
-            else colorScheme.secondaryContainer
-        ),
+        colors = CardDefaults.cardColors(containerColor = fillColor),
         onClick = {},
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -332,57 +326,30 @@ fun LeaderboardEntry(
             Text(
                 place.toString(),
                 modifier = Modifier.width(36.dp),
-                style = typography.labelMedium,
-                color = if (isMe) colorScheme.onPrimary
-                else colorScheme.secondary
+                style = typography.titleMedium
             )
-            if (user.currentApp == null)
-                Text(
-                    user.name,
-                    style = typography.labelMedium,
-                    color = if (isMe) colorScheme.onPrimary
-                    else colorScheme.onSecondaryContainer
-                )
-            else
+            if (isMe || user.currentApp == null) {
+                Text(user.name, style = typography.titleMedium)
+            } else {
                 Column {
-                    Text(
-                        user.name,
-                        style = typography.labelMedium,
-                        color = if (isMe) colorScheme.onPrimary
-                        else colorScheme.onSecondaryContainer
-                    )
-                    if (!isMe) {
-                        Spacer(Modifier.height(4.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "⦿",
-                                style = typography.labelSmall,
-                                color = if (isMe) colorScheme.onPrimary
-                                else colorScheme.onSecondaryContainer
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                "Using ${user.currentApp} for ${formatDuration(time)}",
-                                style = typography.labelSmall,
-                                color = if (isMe) colorScheme.onPrimary
-                                else colorScheme.onSecondaryContainer
-                            )
-                        }
+                    Text(user.name, style = typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("⦿", style = typography.labelSmall)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Using ${user.currentApp} for ${formatDuration(time)}",
+                            style = typography.labelSmall,
+                        )
                     }
                 }
+            }
             Spacer(
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
             )
-            Text(
-                text = formatDuration(user.score),
-                style = typography.labelMedium,
-                color = if (isMe) colorScheme.onPrimary
-                else colorScheme.onSecondaryContainer
-            )
+            Text(text = formatDuration(user.score), style = typography.titleMedium)
         }
     }
 }
