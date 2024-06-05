@@ -120,7 +120,7 @@ fun UserCompetitionsScreen(
 
   if (!loading) {
     Column(modifier = modifier) {
-      Box(modifier = Modifier.weight(1f)) { Leaderboard(competitionId!!, userId) }
+      competitionId?.let { Box(modifier = Modifier.weight(1f)) { Leaderboard(it, userId) } }
 
       Column(modifier = Modifier.padding(16.dp)) {
         Row {
