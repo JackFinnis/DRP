@@ -126,9 +126,7 @@ private fun createUser(
 }
 
 fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor, user: User) {
-    user.enrolledIn.forEach { comp -> FirestoreManager().updateScore(
-        comp, userId, usageStatsProcessor.getTotalUsage().toInt()
-    ) {} }
+    FirestoreManager().updateScore(userId, usageStatsProcessor.getTotalUsage()) {}
 
     val usageStats = usageStatsProcessor.getApplicationUsageStats()
     FirestoreManager().uploadUsageData(userId, usageStats) {}

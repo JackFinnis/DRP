@@ -8,14 +8,16 @@ data class User(
     @DocumentId
     val id: String = "",
     val name: String = "",
-    val enrolledIn: List<String> = listOf(),
+    val score: Long = 0,
+    val competitionId: String? = null,
     val currentApp: String? = null,
     val currentAppSince: Timestamp? = null
 ) {
     companion object {
         const val COLLECTION_NAME = "users"
         const val FIELD_NAME = "name"
-        const val FIELD_ENROLLED_IN = "enrolledIn"
+        const val FIELD_SCORE = "score"
+        const val FIELD_COMPETITION_ID = "competitionId"
         const val FIELD_CURRENT_APP = "currentApp"
         const val FIELD_CURRENT_APP_SINCE = "currentAppSince"
     }
@@ -36,14 +38,10 @@ data class UsageData(
 data class Competition(
     @DocumentId
     val id: String = "",
-    val name: String = "",
-    val leaderboard: Map<String, Int> = mapOf(),
     val inviteCode: String = ""
 ) {
     companion object {
         const val COLLECTION_NAME = "competitions"
-        const val FIELD_NAME = "name"
-        const val FIELD_LEADERBOARD = "leaderboard"
         const val INVITE_CODE = "inviteCode"
     }
 }

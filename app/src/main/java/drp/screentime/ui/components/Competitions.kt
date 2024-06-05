@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
+import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
 
 @ExperimentalMaterial3Api
@@ -69,10 +70,9 @@ fun UserCompetitionsScreen(
     var showInviteDialog by remember { mutableStateOf(false) }
 
     fun fetchCompetitions() {
-        firestoreManager.getEnrolledCompetitions(userId) { result ->
-            competitions = result.ifEmpty {
-                emptyList()
-            }
+        firestoreManager.getUserData(userId) { user ->
+            // todo bad
+            competitions = listOf(Competition(id = user?.competitionId ?: "", inviteCode = "ABCDE"))
             loading = false
             fullLoading = false
         }
@@ -139,7 +139,7 @@ fun UserCompetitionsScreen(
                             modifier = Modifier.weight(1f),
                             onClick = {
                                 // Add a new competition
-                                firestoreManager.createCompetitionAndAddUser(userId, "Test") {
+                                firestoreManager.createCompetitionAndAddUser(userId) {
                                     fullLoading = true
                                     loading = true
                                     fetchCompetitions()
@@ -265,14 +265,25 @@ fun CompetitionList(competitions: List<Competition>, firestoreManager: Firestore
             modifier = Modifier.fillMaxSize()
         ) {
             items(competitions) { competition ->
-                CompetitionItem(competition, firestoreManager, userId)
+                CompetitionItem(competition, userId)
             }
         }
     }
 }
 
 @Composable
-fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager, userId: String) {
+fun CompetitionItem(competition: Competition, userId: String) {
+    var users by remember { mutableStateOf<List<User>>(emptyList()) }
+    val firestoreManager = FirestoreManager()
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(competition.id) {
+        firestoreManager.listenForCompetitionUpdates(competition.id) { newUsers ->
+            users = newUsers.sortedBy { it.score }
+            loading = false
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -281,19 +292,18 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = competition.name,
+                text = "Leaderboard",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(0.dp, 8.dp, 0.dp, 0.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            if (competition.leaderboard.isEmpty()) {
+            if (users.isEmpty()) {
                 Text(text = "No leaderboard data available")
             } else {
-                competition.leaderboard.toList().sortedBy { pair: Pair<String, Int> -> pair.second }
-                    .forEachIndexed { index, (user, score) ->
-                    LeaderboardEntry(index + 1, user, score, user == userId)
+                users.forEachIndexed { index, user ->
+                    LeaderboardEntry(index + 1, user)
                 }
             }
         }
@@ -303,24 +313,12 @@ fun CompetitionItem(competition: Competition, firestoreManager: FirestoreManager
 @Composable
 fun LeaderboardEntry(
     place: Int,
-    userId: String,
-    score: Int,
-    isMe: Boolean
+    user: User
 ) {
-    val firestoreManager = FirestoreManager()
-    var userName by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
-    var currentApp by remember { mutableStateOf<String?>(null)}
-    var time by remember { mutableStateOf<Long>(0)}
+    val isMe = false;
 
-    LaunchedEffect(userId) {
-        firestoreManager.getUserData(userId) { user ->
-            userName = user?.name ?: "Unknown User"
-            loading = false
-            currentApp = user?.currentApp
-            time = Timestamp.now().seconds - (user?.currentAppSince?.seconds ?: 0)
-        }
-    }
+    // number of seconds the user has been using the app
+    val time = user.currentAppSince?.seconds?.let { user.currentAppSince.seconds - Timestamp.now().seconds }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -342,9 +340,9 @@ fun LeaderboardEntry(
                 color = if (isMe) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.secondary
             )
-            if (currentApp == null)
+            if (user.currentApp == null)
                 Text(
-                    if (loading) "Loading..." else userName,
+                    user.name,
                     style = MaterialTheme.typography.labelMedium,
                     color = if (isMe) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSecondaryContainer
@@ -352,7 +350,7 @@ fun LeaderboardEntry(
             else
                 Column {
                     Text(
-                        if (loading) "Loading..." else userName,
+                        user.name,
                         style = MaterialTheme.typography.labelMedium,
                         color = if (isMe) MaterialTheme.colorScheme.onPrimary
                         else MaterialTheme.colorScheme.onSecondaryContainer
@@ -368,7 +366,7 @@ fun LeaderboardEntry(
                             else MaterialTheme.colorScheme.onSecondaryContainer)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Using $currentApp for ${formatDuration(time ?: 0)}",
+                            "Using ${user.currentApp} for ${formatDuration(time ?: 0)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (isMe) MaterialTheme.colorScheme.onPrimary
                             else MaterialTheme.colorScheme.onSecondaryContainer
@@ -381,7 +379,7 @@ fun LeaderboardEntry(
                     .fillMaxHeight()
             )
             Text(
-                text = formatDuration(score.toLong()),
+                text = formatDuration(user.score),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isMe) MaterialTheme.colorScheme.onPrimary
                 else MaterialTheme.colorScheme.onSecondaryContainer

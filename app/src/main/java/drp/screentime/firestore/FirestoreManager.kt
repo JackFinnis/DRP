@@ -12,26 +12,6 @@ class FirestoreManager {
     fun getUserData(userId: String, onResult: (User?) -> Unit) =
         fetchDocument(User.COLLECTION_NAME, userId, onResult)
 
-    fun getCompetitionData(competitionId: String, onResult: (Competition?) -> Unit) =
-        fetchDocument(Competition.COLLECTION_NAME, competitionId, onResult)
-
-    fun getEnrolledCompetitions(userId: String, onResult: (List<Competition>) -> Unit) {
-        getUserData(userId) { user ->
-            user?.let {
-                val competitions = mutableListOf<Competition>()
-                val pendingCompCount = user.enrolledIn.size
-
-                if (pendingCompCount == 0) onResult(emptyList())
-                else user.enrolledIn.forEach { competitionId ->
-                    getCompetitionData(competitionId) { competition ->
-                        competition?.let { competitions.add(it) }
-                        if (competitions.size == pendingCompCount) onResult(competitions)
-                    }
-                }
-            } ?: onResult(emptyList())
-        }
-    }
-
     fun addUser(name: String, onComplete: (String?) -> Unit) =
         addDocument(User.COLLECTION_NAME, User(name = name), onComplete)
 
@@ -40,21 +20,10 @@ class FirestoreManager {
             .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
-     fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
+    fun enrollInCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
         val userRef = db.collection(User.COLLECTION_NAME).document(userId)
-        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
-
-        db.runTransaction { transaction ->
-            val user = transaction.get(userRef).toObject(User::class.java)
-            val comp = transaction.get(compRef).toObject(Competition::class.java)
-
-            if (user != null && comp != null) {
-                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn + competitionId)
-                transaction.update(
-                    compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard + (userId to 0)
-                )
-            }
-        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+        userRef.update(User.FIELD_COMPETITION_ID, competitionId)
+            .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
     }
 
     private fun getCompetitionIdFromInviteCode(inviteCode: String, onResult: (String?) -> Unit) {
@@ -80,50 +49,32 @@ class FirestoreManager {
         }
     }
 
-    fun removeFromCompetition(userId: String, competitionId: String, onComplete: (Boolean) -> Unit) {
-        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
-        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
+    private fun createCompetition(onComplete: (String?) -> Unit) =
+        addDocument(Competition.COLLECTION_NAME, Competition(inviteCode = generateInviteCode()), onComplete)
 
-        db.runTransaction { transaction ->
-            val user = transaction.get(userRef).toObject(User::class.java)
-            val comp = transaction.get(compRef).toObject(Competition::class.java)
-            if (user != null && comp != null) {
-                transaction.update(userRef, User.FIELD_ENROLLED_IN, user.enrolledIn - competitionId)
-                if (comp.leaderboard.size != 1) {
-                    transaction.update(
-                        compRef, Competition.FIELD_LEADERBOARD, comp.leaderboard - userId
-                    )
-                } else {
-                    transaction.delete(compRef)
-                }
-            }
-        }
-    }
-
-    private fun createCompetition(competitionName: String, onComplete: (String?) -> Unit) =
-        addDocument(Competition.COLLECTION_NAME, Competition(name = competitionName, inviteCode = generateInviteCode()), onComplete)
-
-    fun createCompetitionAndAddUser(userId: String, competitionName: String, onComplete: (Boolean) -> Unit) {
-        createCompetition(competitionName) { competitionId ->
+    fun createCompetitionAndAddUser(userId: String, onComplete: (Boolean) -> Unit) {
+        createCompetition { competitionId ->
             competitionId?.let {
                 enrollInCompetition(userId, it, onComplete)
             } ?: onComplete(false)
         }
     }
 
-    fun updateScore(
-        competitionId: String, userId: String, newScore: Int, onComplete: (Boolean) -> Unit
-    ) {
-        val compRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
+    fun updateScore(userId: String, newScore: Long, onComplete: (Boolean) -> Unit) {
+        val userRef = db.collection(User.COLLECTION_NAME).document(userId)
+        userRef.update(User.FIELD_SCORE, newScore)
+            .addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+    }
 
-        db.runTransaction { transaction ->
-            val comp = transaction.get(compRef).toObject(Competition::class.java)
-            comp?.let {
-                transaction.update(
-                    compRef, Competition.FIELD_LEADERBOARD, it.leaderboard + (userId to newScore)
-                )
+    fun listenForCompetitionUpdates(competitionId: String, onResult: (List<User>) -> Unit) {
+        db.collection(User.COLLECTION_NAME).whereEqualTo(User.FIELD_COMPETITION_ID, competitionId).addSnapshotListener { snapshot, e ->
+            if (e != null || snapshot == null) {
+                onResult(emptyList())
+                return@addSnapshotListener
             }
-        }.addOnSuccessListener { onComplete(true) }.addOnFailureListener { onComplete(false) }
+            val users = snapshot.documents.mapNotNull { it.toObject(User::class.java) }
+            onResult(users)
+        }
     }
 
     fun uploadUsageData(
