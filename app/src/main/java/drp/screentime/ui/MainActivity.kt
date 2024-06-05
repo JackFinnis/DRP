@@ -106,24 +106,27 @@ fun MainScreen() {
         ) {
             CircularProgressIndicator()
         }
-    } else Scaffold(topBar = {
-        LargeTopAppBar(title = {
-            if (showAppBar.value) Text(
-                "Leaderboard",
-                color = colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
-            )
-        })
-    }) { contentPadding ->
-        Box(modifier = Modifier.padding(contentPadding)) {
+    } else {
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(title = {
+                    if (showAppBar.value) Text(
+                        "Leaderboard",
+                        color = colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
+                    )
+                })
+            },
+        ) { contentPadding ->
             UserCompetitionsScreen(
+                modifier = Modifier.padding(contentPadding),
                 userId = userId!!,
                 showBottomSheet = showBottomSheet,
                 showAppBar = showAppBar
             )
-        }
-        if (showBottomSheet.value) {
-            SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
+            if (showBottomSheet.value) {
+                SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
+            }
         }
     }
 }

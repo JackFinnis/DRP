@@ -18,9 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AddChart
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Start
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -122,15 +123,7 @@ fun UserCompetitionsScreen(
     if (!loading) {
         Column(modifier = modifier) {
             Box(modifier = Modifier.weight(1f)) {
-                if (loading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (competitionId != null) {
-                    Box(modifier = Modifier) {
-                        Leaderboard(competitionId!!, userId)
-                    }
-                }
+                Leaderboard(competitionId!!, userId)
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
@@ -145,8 +138,8 @@ fun UserCompetitionsScreen(
                                     fetchCompetitions()
                                 }
                             },
-                            icon = Icons.Filled.AddCircle,
-                            text = "Start Competition",
+                            icon = Icons.Default.AddChart,
+                            text = "Start a competition",
                             tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
@@ -155,8 +148,8 @@ fun UserCompetitionsScreen(
                             onClick = {
                                 showJoinCompetitionDialog = true
                             },
-                            icon = Icons.Filled.Person,
-                            text = "Join Competition",
+                            icon = Icons.Default.Start,
+                            text = "Join competition",
                             tonal = false
                         )
             } else {
@@ -166,22 +159,29 @@ fun UserCompetitionsScreen(
                                 val sendIntent: Intent = Intent().apply {
                                     action = Intent.ACTION_SEND
                                     putExtra(Intent.EXTRA_TEXT, inviteCode)
+
+                                    // Picked up by chosen application if it supports a subject field
+                                    putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
+
+                                    // This is the title of the dialog that the user will see
+                                    putExtra(Intent.EXTRA_TITLE, "Competition invite code")
+
                                     type = "text/plain"
                                 }
 
                                 val shareIntent = Intent.createChooser(sendIntent, null)
                                 context.startActivity(shareIntent)
                             },
-                            icon = Icons.Filled.AddCircle,
-                            text = "Invite People",
+                            icon = Icons.Default.PersonAdd,
+                            text = "Invite friends",
                             tonal = false
                         )
                         Spacer(Modifier.width(16.dp))
                         MainScreenButton(
                             modifier = Modifier.weight(1f),
                             onClick = { showBottomSheet.value = true },
-                            icon = Icons.Filled.Face,
-                            text = "Edit Profile",
+                            icon = Icons.Default.Edit,
+                            text = "Edit name",
                             tonal = true
                         )
                     }
@@ -257,11 +257,8 @@ fun Leaderboard(competitionId: String, userId: String) {
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
         LazyColumn(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(
@@ -277,7 +274,6 @@ fun Leaderboard(competitionId: String, userId: String) {
                 }
             }
         }
-    }
 }
 
 @Composable

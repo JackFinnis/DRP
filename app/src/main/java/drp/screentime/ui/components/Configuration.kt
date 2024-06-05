@@ -54,7 +54,7 @@ fun SaveNameBottomSheet(sheetState: SheetState, showBottomSheet: MutableState<Bo
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text("User settings", style = MaterialTheme.typography.headlineSmall)
+            Text("Enter your name", style = MaterialTheme.typography.headlineSmall)
             Text("ID: $userId", style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
