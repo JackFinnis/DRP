@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.compose.AppTheme
 import drp.screentime.App
 import drp.screentime.firestore.FirestoreManager
+import drp.screentime.firestore.User
 import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.SaveNameBottomSheet
 import drp.screentime.ui.components.UserCompetitionsScreen
@@ -84,7 +85,7 @@ fun MainScreen() {
                         createUser(firestoreManager, scope, dataStoreManager)
                     } else {
                         userId = storedUserId
-                        postScreenTimeToDb(storedUserId, usageStatsProcessor)
+                        postScreenTimeToDb(storedUserId, usageStatsProcessor, user)
                     }
                 }
             }
@@ -121,17 +122,13 @@ private fun createUser(
                 dataStoreManager.saveUserName(name)
             }
         }
-
-        // Enroll in the single competition
-        val competition = "QUQYodR01IUu1iaj4qKn"
-        firestoreManager.enrollInCompetition(newUserId!!, competition) { }
     }
 }
 
-fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor) {
-    FirestoreManager().updateScore(
-        "QUQYodR01IUu1iaj4qKn", userId, usageStatsProcessor.getTotalUsage().toInt()
-    ) {}
+fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor, user: User) {
+    user.enrolledIn.forEach { comp -> FirestoreManager().updateScore(
+        comp, userId, usageStatsProcessor.getTotalUsage().toInt()
+    ) {} }
 
     val usageStats = usageStatsProcessor.getApplicationUsageStats()
     FirestoreManager().uploadUsageData(userId, usageStats) {}

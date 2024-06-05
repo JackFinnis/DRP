@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Timestamp
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.util.formatDuration
@@ -304,18 +305,20 @@ fun LeaderboardEntry(
     place: Int,
     userId: String,
     score: Int,
-    isMe: Boolean,
-    currentApp: String? = if ((0..3).random() != 0) null else "Instagram",
-    time: Long? = (0..5000L).random()
+    isMe: Boolean
 ) {
     val firestoreManager = FirestoreManager()
     var userName by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
+    var currentApp by remember { mutableStateOf<String?>(null)}
+    var time by remember { mutableStateOf<Long>(0)}
 
     LaunchedEffect(userId) {
         firestoreManager.getUserData(userId) { user ->
             userName = user?.name ?: "Unknown User"
             loading = false
+            currentApp = user?.currentApp
+            time = Timestamp.now().seconds - (user?.currentAppSince?.seconds ?: 0)
         }
     }
 
