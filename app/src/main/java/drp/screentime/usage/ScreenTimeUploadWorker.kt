@@ -24,10 +24,12 @@ class ScreenTimeUploadWorker(
             applicationContext.packageManager,
             applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         )
+        val firestoreManager = FirestoreManager()
 
         dataStoreManager.userIdFlow.firstOrNull()?.let { userId ->
             val usageStats = usageStatsProcessor.getApplicationUsageStats()
-            FirestoreManager().uploadUsageData(userId, usageStats) {}
+            firestoreManager.uploadUsageData(userId, usageStats) {}
+            firestoreManager.updateScore(userId, usageStats.values.sum()) {}
         }
 
         return Result.success()
