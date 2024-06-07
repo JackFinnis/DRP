@@ -2,6 +2,7 @@ package drp.screentime.firestore
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,8 +74,8 @@ class FirestoreManager {
         .addOnFailureListener { onComplete(false) }
   }
 
-  fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit) {
-    db.collection(User.COLLECTION_NAME).document(userId).addSnapshotListener { snapshot, e ->
+  fun listenForUserDataChanges(userId: String, onResult: (User?) -> Unit): ListenerRegistration {
+    return db.collection(User.COLLECTION_NAME).document(userId).addSnapshotListener { snapshot, e ->
       if (e != null || snapshot == null || !snapshot.exists()) {
         onResult(null)
         return@addSnapshotListener
@@ -84,10 +85,12 @@ class FirestoreManager {
     }
   }
 
-  fun listenForCompetitionDataChanges(competitionId: String, onResult: (Competition?) -> Unit) {
-    db.collection(Competition.COLLECTION_NAME).document(competitionId).addSnapshotListener {
-        snapshot,
-        e ->
+  fun listenForCompetitionDataChanges(
+      competitionId: String,
+      onResult: (Competition?) -> Unit
+  ): ListenerRegistration {
+    val docRef = db.collection(Competition.COLLECTION_NAME).document(competitionId)
+    return docRef.addSnapshotListener { snapshot, e ->
       if (e != null || snapshot == null || !snapshot.exists()) {
         onResult(null)
         return@addSnapshotListener
@@ -97,8 +100,11 @@ class FirestoreManager {
     }
   }
 
-  fun listenForCompetitionUpdates(competitionId: String, onResult: (List<User>) -> Unit) {
-    db.collection(User.COLLECTION_NAME)
+  fun listenForCompetitionUpdates(
+      competitionId: String,
+      onResult: (List<User>) -> Unit
+  ): ListenerRegistration {
+    return db.collection(User.COLLECTION_NAME)
         .whereEqualTo(User.FIELD_COMPETITION_ID, competitionId)
         .addSnapshotListener { snapshot, e ->
           if (e != null || snapshot == null) {

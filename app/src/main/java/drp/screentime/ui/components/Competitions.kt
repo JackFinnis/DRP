@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
@@ -72,22 +74,27 @@ fun UserCompetitionsScreen(
   var showInviteDialog by remember { mutableStateOf(false) }
   val context = LocalContext.current
 
-  fun fetchCompetitions() {
-    firestoreManager.listenForUserDataChanges(userId) { user ->
-      competitionId = user?.competitionId
-      showAppBar.value = competitionId != null
-      loading = false
-
-      if (competitionId != null) {
-        firestoreManager.listenForCompetitionDataChanges(competitionId!!) { competition ->
-          inviteCode = competition?.inviteCode ?: ""
+  DisposableEffect(userId) {
+    val listener =
+        firestoreManager.listenForUserDataChanges(userId) { user ->
+          competitionId = user?.competitionId
+          showAppBar.value = competitionId != null
+          loading = false
         }
-      }
-    }
+
+    onDispose { listener.remove() }
   }
 
-  // Initial fetch
-  LaunchedEffect(userId) { fetchCompetitions() }
+  DisposableEffect(competitionId) {
+    val listener: ListenerRegistration? =
+        competitionId?.let {
+          firestoreManager.listenForCompetitionDataChanges(it) { competition ->
+            inviteCode = competition?.inviteCode ?: ""
+          }
+        }
+
+    onDispose { listener?.remove() }
+  }
 
   var joinCompetitionCode by remember { mutableStateOf("") }
   if (showJoinCompetitionDialog) {
@@ -98,7 +105,6 @@ fun UserCompetitionsScreen(
               onClick = {
                 firestoreManager.enrollWithInviteCode(userId, joinCompetitionCode) {
                   loading = true
-                  fetchCompetitions()
                 }
                 showJoinCompetitionDialog = false
               }) {
@@ -129,10 +135,7 @@ fun UserCompetitionsScreen(
                 modifier = Modifier.weight(1f),
                 onClick = {
                   // Add a new competition
-                  firestoreManager.createCompetitionAndAddUser(userId) {
-                    loading = true
-                    fetchCompetitions()
-                  }
+                  firestoreManager.createCompetitionAndAddUser(userId) { loading = true }
                 },
                 icon = Icons.Default.AddChart,
                 text = "Start a competition",
@@ -237,11 +240,14 @@ fun Leaderboard(competitionId: String, userId: String) {
   val firestoreManager = FirestoreManager()
   var loading by remember { mutableStateOf(true) }
 
-  LaunchedEffect(competitionId) {
-    firestoreManager.listenForCompetitionUpdates(competitionId) { newUsers ->
-      users = newUsers.sortedBy { it.score }
-      loading = false
-    }
+  DisposableEffect(competitionId) {
+    val listener =
+        firestoreManager.listenForCompetitionUpdates(competitionId) { newUsers ->
+          users = newUsers.sortedBy { it.score }
+          loading = false
+        }
+
+    onDispose { listener.remove() }
   }
 
   LazyColumn(
