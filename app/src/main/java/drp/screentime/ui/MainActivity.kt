@@ -81,7 +81,7 @@ fun MainScreen() {
         createUser(firestoreManager, scope, dataStoreManager)
       } else {
         // Verify the user exists in Firestore
-        firestoreManager.getUserData(storedUserId) { user ->
+        firestoreManager.getUser(storedUserId) { user ->
           if (user == null) {
             // User doesn't exist, create a new user
             createUser(firestoreManager, scope, dataStoreManager)
@@ -145,7 +145,7 @@ private fun createUser(
 }
 
 fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor, user: User) {
-  FirestoreManager().updateScore(userId, usageStatsProcessor.getTotalUsage()) {}
+  FirestoreManager().setUserScore(userId, usageStatsProcessor.getTotalUsage()) {}
 
   val usageStats = usageStatsProcessor.getApplicationUsageStats()
   FirestoreManager().uploadUsageData(userId, usageStats) {}

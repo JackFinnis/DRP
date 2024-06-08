@@ -1,4 +1,4 @@
-package drp.screentime.firestore
+package drp.screentime.util
 
 fun generateInviteCode(): String {
   val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

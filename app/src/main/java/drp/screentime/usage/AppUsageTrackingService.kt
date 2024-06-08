@@ -56,7 +56,7 @@ class AppUsageTrackingService : AccessibilityService() {
       currentApp = app?.let { packageManager.getAppName(it) }
       currentAppOpened = openTime
 
-      db.updateCurrentApp(userId, currentApp, currentAppOpened) { success ->
+      db.setUserCurrentApp(userId, currentApp, currentAppOpened) { success ->
         if (success) {
           lastPosted = System.currentTimeMillis()
         }
