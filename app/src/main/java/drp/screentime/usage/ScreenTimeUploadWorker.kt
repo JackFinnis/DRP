@@ -16,6 +16,8 @@ class ScreenTimeUploadWorker(appContext: Context, workerParams: WorkerParameters
   }
 
   override suspend fun doWork(): Result {
+    var failed = false
+
     // Fetch user id and usage stats
     val dataStoreManager = DataStoreManager(applicationContext)
     val usageStatsProcessor =
@@ -24,12 +26,14 @@ class ScreenTimeUploadWorker(appContext: Context, workerParams: WorkerParameters
             applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager)
     val firestoreManager = FirestoreManager()
 
+    val usageData = usageStatsProcessor.getApplicationUsageStats()
+    val totalUsage = usageStatsProcessor.getTotalUsage()
+
     dataStoreManager.userIdFlow.firstOrNull()?.let { userId ->
-      val usageStats = usageStatsProcessor.getApplicationUsageStats()
-      firestoreManager.uploadUsageData(userId, usageStats) {}
-      firestoreManager.setUserScore(userId, usageStats.values.sum()) {}
+      firestoreManager.uploadUsageData(userId, usageData) { success -> if (!success) failed = true }
+      firestoreManager.setUserScore(userId, totalUsage) { success -> if (!success) failed = true }
     }
 
-    return Result.success()
+    return if (failed) Result.retry() else Result.success()
   }
 }
