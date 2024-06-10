@@ -72,6 +72,8 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging.ktx)
+    implementation(libs.firebase.functions.ktx)
 
     // Saving user preferences
     implementation(libs.androidx.datastore.preferences)

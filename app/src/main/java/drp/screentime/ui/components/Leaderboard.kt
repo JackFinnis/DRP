@@ -29,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.functions.functions
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
@@ -55,14 +57,14 @@ fun LeaderboardView(competitionId: String, userId: String) {
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
-            LeaderboardEntry(place = index + 1, user = user, isMe = user.id == userId)
+            LeaderboardEntry(place = index + 1, user = user, myUserId = userId)
           }
         }
       }
 }
 
 @Composable
-fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
+fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
   val startTime = user.currentAppSince?.seconds ?: 0
 
   // number of seconds the user has been using the app
@@ -78,13 +80,18 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
 
   val fillColor: Color =
       when {
-        isMe -> MaterialTheme.colorScheme.primary
+        myUserId == user.id -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.secondaryContainer
       }
 
   Card(
       colors = CardDefaults.cardColors(containerColor = fillColor),
-      onClick = {},
+      onClick = {
+        if (user.id != myUserId && user.currentApp != null)
+            Firebase.functions
+                .getHttpsCallable("poke")
+                .call(mapOf("toUserID" to user.id, "fromUserID" to myUserId))
+      },
       shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
@@ -93,7 +100,7 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
                   place.toString(),
                   modifier = Modifier.width(36.dp),
                   style = MaterialTheme.typography.titleMedium)
-              if (isMe || user.currentApp == null) {
+              if (myUserId == user.id || user.currentApp == null) {
                 Text(user.name, style = MaterialTheme.typography.titleMedium)
               } else {
                 Column {
