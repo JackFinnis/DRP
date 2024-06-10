@@ -34,14 +34,12 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserView() {
-  var showAppBar = remember { mutableStateOf(false) }
   val sheetState = rememberModalBottomSheetState()
   val showBottomSheet = remember { mutableStateOf(false) }
   val context = LocalContext.current
   val dataStoreManager = remember { DataStoreManager(context) }
   val firestoreManager = remember { FirestoreManager() }
   val scope = rememberCoroutineScope()
-
   var userId by remember { mutableStateOf<String?>(null) }
 
   val usageStatsProcessor =
@@ -62,40 +60,41 @@ fun UserView() {
             createUser(firestoreManager, scope, dataStoreManager)
           } else {
             userId = storedUserId
-            postScreenTimeToDb(storedUserId, usageStatsProcessor, user)
+            postScreenTimeToDb(storedUserId, usageStatsProcessor)
           }
         }
       }
     }
   }
 
-  if (userId == null)
-      Scaffold {
-        Box(modifier = Modifier.padding(it).fillMaxSize(), contentAlignment = Alignment.Center) {
-          CircularProgressIndicator()
-        }
-      }
-  else {
+  if (userId == null) {
+    Scaffold { contentPadding ->
+      Box(
+          modifier = Modifier.padding(contentPadding).fillMaxSize(),
+          contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+          }
+    }
+  } else {
     Scaffold(
         topBar = {
           LargeTopAppBar(
               title = {
-                if (showAppBar.value)
-                    Text(
-                        "Leaderboard",
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
-                    )
+                Text(
+                    "Leaderboard",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
+                )
               })
         },
     ) { contentPadding ->
-      UserCompetitionsScreen(
+      CompetitionView(
           modifier = Modifier.padding(contentPadding),
           userId = userId!!,
-          showBottomSheet = showBottomSheet,
-          showAppBar = showAppBar)
+          showBottomSheet = showBottomSheet)
+
       if (showBottomSheet.value) {
-        SaveNameBottomSheet(sheetState, showBottomSheet, userId!!)
+        EditNameView(sheetState, showBottomSheet, userId!!)
       }
     }
   }
@@ -117,7 +116,7 @@ private fun createUser(
   }
 }
 
-fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor, user: User) {
+fun postScreenTimeToDb(userId: String, usageStatsProcessor: UsageStatsProcessor) {
   FirestoreManager().setUserScore(userId, usageStatsProcessor.getTotalUsage()) {}
 
   val usageStats = usageStatsProcessor.getApplicationUsageStats()

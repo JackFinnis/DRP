@@ -29,11 +29,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SaveNameBottomSheet(
-    sheetState: SheetState,
-    showBottomSheet: MutableState<Boolean>,
-    userId: String
-) {
+fun EditNameView(sheetState: SheetState, showBottomSheet: MutableState<Boolean>, userId: String) {
   val context = LocalContext.current
   val dataStoreManager = remember { DataStoreManager(context) }
   val scope = rememberCoroutineScope()
