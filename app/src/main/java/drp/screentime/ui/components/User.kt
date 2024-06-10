@@ -10,7 +10,7 @@ import drp.screentime.firestore.Collections
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.firestore.db
-import drp.screentime.notification.PokeNotificationService
+import drp.screentime.notification.MessagingService
 import drp.screentime.util.generateUserName
 
 @Composable
@@ -20,7 +20,7 @@ fun UserView(userId: String) {
   fun createUser() {
     db.collection(Collections.USERS).document(userId).set(User(
       name = generateUserName(),
-      fcmToken = PokeNotificationService.fcmToken,
+      fcmToken = MessagingService.fcmToken,
     ))
   }
 

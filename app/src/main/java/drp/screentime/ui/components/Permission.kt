@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.StackedBarChart
@@ -42,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import drp.screentime.usage.AppUsageTrackingService
 import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.areAppNotificationsEnabled
 
@@ -67,12 +65,6 @@ fun PermissionsView() {
           isEnabled = UsageStatsProcessor.Companion::hasUsageStatsAccess,
           description = "Usage data access",
           icon = Icons.Default.StackedBarChart)
-
-      PermissionRow(
-          intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
-          isEnabled = AppUsageTrackingService.Companion::isEnabled,
-          description = "Accessibility service",
-          icon = Icons.Default.AccessibilityNew)
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         PermissionRow(
