@@ -22,7 +22,6 @@ import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.LoadingView
 import drp.screentime.ui.components.PermissionsView
 import drp.screentime.ui.components.UserView
-import java.util.UUID
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {

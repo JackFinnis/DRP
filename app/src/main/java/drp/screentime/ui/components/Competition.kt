@@ -1,6 +1,7 @@
 package drp.screentime.ui.components
 
 import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,6 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,48 +55,37 @@ fun CompetitionView(user: User, competitionId: String) {
     LoadingView()
   } else {
     Scaffold(
-        topBar = {
-          LargeTopAppBar(
-              title = {
-                Text(
-                    "Leaderboard",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
-                )
-              })
-        },
+        topBar = { LargeTopAppBar(title = { Text("Leaderboard") }) },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        competitionId.let { Box(modifier = Modifier.weight(1f)) { LeaderboardView(it, user.id) } }
-
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row {
-            LargeButton(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                  val sendIntent: Intent =
-                      Intent().apply {
-                        action = Intent.ACTION_SEND
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
-                        putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
-                        putExtra(Intent.EXTRA_TITLE, "Competition invite code")
-                      }
-                  val shareIntent = Intent.createChooser(sendIntent, null)
-                  context.startActivity(shareIntent)
-                },
-                icon = Icons.Default.PersonAdd,
-                text = "Invite friends",
-                tonal = false)
-            Spacer(Modifier.width(16.dp))
-            LargeButton(
-                modifier = Modifier.weight(1f),
-                onClick = { showEditNameAlert = true },
-                icon = Icons.Default.Edit,
-                text = "Edit name",
-                tonal = true)
-          }
-        }
+        Box(modifier = Modifier.weight(1f)) { LeaderboardView(competitionId, user.id) }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+              LargeButton(
+                  modifier = Modifier.weight(1f),
+                  onClick = {
+                    val sendIntent: Intent =
+                        Intent().apply {
+                          action = Intent.ACTION_SEND
+                          type = "text/plain"
+                          putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
+                          putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
+                          putExtra(Intent.EXTRA_TITLE, "Competition invite code")
+                        }
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                  },
+                  icon = Icons.Default.PersonAdd,
+                  text = "Invite friends",
+                  tonal = false)
+              LargeButton(
+                  modifier = Modifier.weight(1f),
+                  onClick = { showEditNameAlert = true },
+                  icon = Icons.Default.Edit,
+                  text = "Edit name",
+                  tonal = true)
+            }
       }
     }
   }
@@ -116,11 +105,7 @@ fun CompetitionView(user: User, competitionId: String) {
         dismissButton = { TextButton(onClick = { showEditNameAlert = false }) { Text("Cancel") } },
         title = { Text("Enter your name") },
         text = {
-          TextField(
-              value = name,
-              onValueChange = { name = it },
-              label = { Text("Your name") },
-              modifier = Modifier.fillMaxWidth())
+          TextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
         })
   }
 }
