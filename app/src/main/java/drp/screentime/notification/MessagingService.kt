@@ -3,6 +3,7 @@ package drp.screentime.notification
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import drp.screentime.usage.DataUploader
 
 class MessagingService : FirebaseMessagingService() {
 
@@ -13,7 +14,11 @@ class MessagingService : FirebaseMessagingService() {
     // Check if message contains a data payload.
     remoteMessage.data.isNotEmpty().let {
       Log.d(TAG, "Message data payload: " + remoteMessage.data)
-      // Handle data payload here.
+
+      when (val action = remoteMessage.data["action"]) {
+        Actions.REQUEST_DATA_UPDATE -> DataUploader.uploadAsap(applicationContext)
+        else -> Log.d(TAG, "Unknown action: $action")
+      }
     }
 
     // Check if message contains a notification payload.
@@ -31,5 +36,10 @@ class MessagingService : FirebaseMessagingService() {
   companion object {
     private const val TAG = "SCREENTIME"
     var fcmToken: String? = null
+  }
+
+  object Actions {
+    /** Remote request for latest screen time data. */
+    const val REQUEST_DATA_UPDATE = "request_data_update"
   }
 }

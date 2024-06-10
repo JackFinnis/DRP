@@ -6,7 +6,8 @@ import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Process
 import drp.screentime.util.addDays
 import drp.screentime.util.getHomeScreenLaunchers
@@ -14,12 +15,22 @@ import drp.screentime.util.getMidnight
 import drp.screentime.util.isSystemApp
 import java.util.Date
 
-class UsageStatsProcessor(
-    private val pm: PackageManager,
-    private val usageStatsManager: UsageStatsManager
-) {
+class UsageStatsProcessor(context: Context) {
+
+  private val pm: PackageManager = context.packageManager
+  private val usageStatsManager: UsageStatsManager =
+      context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
 
   private val hiddenPackages = setOf("drp.screentime") + pm.getHomeScreenLaunchers()
+
+  /** Get the total usage for the given day in seconds. */
+  fun getTotalUsage(day: Date = Date()): Long {
+    return getUsageStats(day).sumOf { it.totalUsageMillis } / 1000
+  }
+
+  /** Get the currently open app, if there is one. */
+  fun getCurrentlyOpenApp(): UsageStats? =
+    getUsageStats().filter { it.isValid }.maxByOrNull { it.lastUsageTime }
 
   /**
    * Get the usage stats for the given day.
@@ -31,27 +42,22 @@ class UsageStatsProcessor(
     val startTime = getMidnight(day)
     val endTime = getMidnight(addDays(day, 1))
 
-    return usageStatsManager
-        .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-        .filter { it.totalTimeInForeground > 0 }
-        .filterNot { pm.isSystemApp(it.packageName) }
-        .filterNot { hiddenPackages.contains(it.packageName) }
+    return usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+      .filterNot { it.isMundane }
   }
 
-  private fun UsageStats.totalUsageMillis(): Long {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) totalTimeVisible
-    else totalTimeInForeground
-  }
-
-  fun getApplicationUsageStats(day: Date = Date()): Map<String, Long> {
-    return getUsageStats(day).associate { it.packageName to it.totalUsageMillis() / 1000 }
-  }
-
-  fun getTotalUsage(day: Date = Date()): Long {
-    return getUsageStats(day).sumOf { it.totalUsageMillis() } / 1000
-  }
+  private val UsageStats.isMundane: Boolean
+    get() = totalUsageMillis > 0 && !pm.isSystemApp(packageName) && packageName !in hiddenPackages
+  private val UsageStats.isValid: Boolean
+    get() {
+      val currentTime = System.currentTimeMillis() / 1000
+      return lastUsageTime in (currentTime - STALE_THRESHOLD)..currentTime
+    }
 
   companion object {
+    /** Threshold, in seconds, after which the usage statistic is considered stale. */
+    private const val STALE_THRESHOLD = 3 * 60
+
     fun hasUsageStatsAccess(context: Context): Boolean {
       val appOps: AppOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
       @Suppress("DEPRECATION")
@@ -66,3 +72,17 @@ class UsageStatsProcessor(
     }
   }
 }
+
+/** Returns [UsageStats.getTotalTimeVisible] or [UsageStats.getTotalTimeInForeground] as appropriate, depending on the device's Android version. */
+private val UsageStats.totalUsageMillis: Long
+  get() = when {
+    VERSION.SDK_INT >= VERSION_CODES.Q -> totalTimeVisible
+    else -> totalTimeInForeground
+  }
+
+/** Returns [UsageStats.getLastTimeVisible] or [UsageStats.getLastTimeUsed] as appropriate, depending on the device's Android version. */
+private val UsageStats.lastUsageTime: Long
+  get() = when {
+    VERSION.SDK_INT >= VERSION_CODES.Q -> lastTimeVisible
+    else -> lastTimeUsed
+  }
