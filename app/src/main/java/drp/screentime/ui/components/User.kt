@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.firestore.db
+import drp.screentime.notification.PokeNotificationService
 import drp.screentime.util.generateUserName
 
 @Composable
@@ -16,7 +17,8 @@ fun UserView(userId: String) {
   var user by remember { mutableStateOf<User?>(null) }
 
   fun createUser() {
-    db.collection(User.COLLECTION_NAME).document(userId).set(User(name = generateUserName()))
+    db.collection(User.COLLECTION_NAME).document(userId)
+      .set(User(name = generateUserName(), fcmToken = PokeNotificationService.fcmToken))
   }
 
   DisposableEffect(userId) {
