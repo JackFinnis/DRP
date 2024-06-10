@@ -3,6 +3,7 @@ package drp.screentime.firestore
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import drp.screentime.notification.PokeNotificationService
 import drp.screentime.util.generateInviteCode
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -14,8 +15,11 @@ class FirestoreManager {
   fun getUser(userId: String, onResult: (User?) -> Unit) =
     getDocument(User.COLLECTION_NAME, userId, onResult)
 
-  fun addUser(name: String, onComplete: (String?) -> Unit) =
-    addDocument(User.COLLECTION_NAME, User(name = name), onComplete)
+  fun addUser(name: String, onComplete: (String?) -> Unit) = addDocument(
+    User.COLLECTION_NAME,
+    User(name = name, fcmToken = PokeNotificationService.fcmToken),
+    onComplete
+  )
 
   private fun addCompetition(onComplete: (String?) -> Unit) =
     addDocument(

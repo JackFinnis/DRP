@@ -49,13 +49,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.functions.functions
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun UserCompetitionsScreen(
@@ -249,18 +251,20 @@ fun Leaderboard(competitionId: String, userId: String) {
   }
 
   LazyColumn(
-      modifier = Modifier.fillMaxWidth().padding(24.dp),
+      modifier = Modifier
+          .fillMaxWidth()
+          .padding(24.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
-            LeaderboardEntry(place = index + 1, user = user, isMe = user.id == userId)
+              LeaderboardEntry(place = index + 1, user = user, userId)
           }
         }
       }
 }
 
 @Composable
-fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
+fun LeaderboardEntry(place: Int, user: User, myId: String) {
   val startTime = user.currentAppSince?.seconds ?: 0
 
   // number of seconds the user has been using the app
@@ -276,13 +280,18 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
 
   val fillColor: Color =
       when {
-        isMe -> colorScheme.primary
+          user.id == myId -> colorScheme.primary
         else -> colorScheme.secondaryContainer
       }
 
   Card(
-      colors = CardDefaults.cardColors(containerColor = fillColor),
-      onClick = {},
+      colors = CardDefaults.cardColors(containerColor = fillColor), onClick = {
+          Firebase.functions.getHttpsCallable("poke").call(
+              mapOf(
+                  "toUserID" to user.id, "fromUserID" to myId
+              )
+          )
+      },
       shape = RoundedCornerShape(20.dp)) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
@@ -291,7 +300,7 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
                   place.toString(),
                   modifier = Modifier.width(36.dp),
                   style = typography.titleMedium)
-              if (isMe || user.currentApp == null) {
+            if (user.id == myId || user.currentApp == null) {
                 Text(user.name, style = typography.titleMedium)
               } else {
                 Column {
@@ -307,7 +316,10 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
                   }
                 }
               }
-              Spacer(Modifier.weight(1f).fillMaxHeight())
+              Spacer(
+                  Modifier
+                      .weight(1f)
+                      .fillMaxHeight())
               Text(text = formatDuration(user.score), style = typography.titleMedium)
             }
       }
