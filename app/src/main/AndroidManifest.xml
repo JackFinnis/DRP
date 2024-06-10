@@ -34,11 +34,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.SetupActivity"
-            android:theme="@style/Theme.ScreenTime"
-            android:exported="true" />
-
         <service
             android:name=".usage.AppUsageTrackingService"
             android:exported="true"

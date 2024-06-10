@@ -18,6 +18,5 @@ fun AppIcon(packageName: String) {
   Image(
       painter = rememberAsyncImagePainter(icon.toBitmap()),
       contentDescription = "Icon for $appName",
-      modifier = Modifier.size(36.dp)
-  )
+      modifier = Modifier.size(36.dp))
 }
