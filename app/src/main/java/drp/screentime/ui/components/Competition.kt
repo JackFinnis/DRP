@@ -286,11 +286,12 @@ fun LeaderboardEntry(place: Int, user: User, myId: String) {
 
   Card(
       colors = CardDefaults.cardColors(containerColor = fillColor), onClick = {
-          Firebase.functions.getHttpsCallable("poke").call(
-              mapOf(
-                  "toUserID" to user.id, "fromUserID" to myId
+          if (user.id != myId && user.currentApp != null)
+              Firebase.functions.getHttpsCallable("poke").call(
+                  mapOf(
+                      "toUserID" to user.id, "fromUserID" to myId
+                  )
               )
-          )
       },
       shape = RoundedCornerShape(20.dp)) {
         Row(
