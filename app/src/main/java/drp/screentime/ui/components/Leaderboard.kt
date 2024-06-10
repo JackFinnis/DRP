@@ -39,21 +39,19 @@ import kotlinx.coroutines.delay
 @Composable
 fun LeaderboardView(competitionId: String, userId: String) {
   var users by remember { mutableStateOf<List<User>>(emptyList()) }
-  val firestoreManager = FirestoreManager()
   var loading by remember { mutableStateOf(true) }
 
   DisposableEffect(competitionId) {
     val listener =
-        firestoreManager.addLeaderboardListener(competitionId) { newUsers ->
+        FirestoreManager.addLeaderboardListener(competitionId) { newUsers ->
           users = newUsers.sortedBy { it.score }
           loading = false
         }
-
     onDispose { listener.remove() }
   }
 
   LazyColumn(
-      modifier = Modifier.fillMaxWidth().padding(24.dp),
+      modifier = Modifier.fillMaxWidth().padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
@@ -87,7 +85,7 @@ fun LeaderboardEntry(place: Int, user: User, isMe: Boolean = false) {
   Card(
       colors = CardDefaults.cardColors(containerColor = fillColor),
       onClick = {},
-      shape = RoundedCornerShape(20.dp)) {
+      shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
             verticalAlignment = Alignment.CenterVertically) {

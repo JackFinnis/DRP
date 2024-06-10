@@ -32,7 +32,6 @@ class AppUsageTrackingService : AccessibilityService() {
   /** The time at which the last app usage was posted. */
   private var lastPosted = System.currentTimeMillis()
 
-  private val db = FirestoreManager()
   private lateinit var dataStoreManager: DataStoreManager
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -56,7 +55,7 @@ class AppUsageTrackingService : AccessibilityService() {
       currentApp = app?.let { packageManager.getAppName(it) }
       currentAppOpened = openTime
 
-      db.setUserCurrentApp(userId, currentApp, currentAppOpened) { success ->
+      FirestoreManager.setUserCurrentApp(userId, currentApp, currentAppOpened) { success ->
         if (success) {
           lastPosted = System.currentTimeMillis()
         }
@@ -68,7 +67,7 @@ class AppUsageTrackingService : AccessibilityService() {
     super.onServiceConnected()
     dataStoreManager = DataStoreManager(applicationContext)
     CoroutineScope(Dispatchers.IO).launch {
-      dataStoreManager.userIdFlow.collect { id -> userId = id }
+      dataStoreManager.get(DataStoreManager.Key.USER_ID).collect { id -> userId = id }
     }
   }
 

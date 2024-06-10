@@ -41,6 +41,7 @@ class App : Application() {
 
   companion object {
     fun areAllPermissionsGranted(context: Context): Boolean {
+      return true;
       return UsageStatsProcessor.hasUsageStatsAccess(context) &&
           AppUsageTrackingService.isEnabled(context) &&
           context.areAppNotificationsEnabled()

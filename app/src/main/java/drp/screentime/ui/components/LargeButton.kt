@@ -25,28 +25,29 @@ fun LargeButton(
     text: String,
     tonal: Boolean
 ) {
-  if (tonal)
-      FilledTonalButton(
-          shape = RoundedCornerShape(24.dp),
-          contentPadding = PaddingValues(16.dp),
-          modifier = modifier,
-          onClick = onClick) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-              Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-              Spacer(Modifier.height(8.dp))
-              Text(text, style = MaterialTheme.typography.labelLarge)
-            }
+  if (tonal) {
+    FilledTonalButton(
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(16.dp),
+        modifier = modifier,
+        onClick = onClick) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge)
           }
-  else
-      Button(
-          shape = RoundedCornerShape(24.dp),
-          contentPadding = PaddingValues(16.dp),
-          modifier = modifier,
-          onClick = onClick) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-              Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-              Spacer(Modifier.height(8.dp))
-              Text(text, style = MaterialTheme.typography.labelLarge)
-            }
+        }
+  } else {
+    Button(
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(16.dp),
+        modifier = modifier,
+        onClick = onClick) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge)
           }
+        }
+  }
 }
