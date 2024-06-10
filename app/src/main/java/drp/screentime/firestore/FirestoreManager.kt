@@ -3,21 +3,19 @@ package drp.screentime.firestore
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import drp.screentime.notification.PokeNotificationService
+import drp.screentime.firestore.Document.Companion.FIELD_LAST_UPDATED
 import drp.screentime.util.generateInviteCode
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 val db = FirebaseFirestore.getInstance()
 
 object FirestoreManager {
-  private fun addCompetition(onComplete: (String?) -> Unit) =
-    addDocument(
-      Competition.COLLECTION_NAME, Competition(inviteCode = generateInviteCode()), onComplete)
+  private fun addCompetition(onComplete: (String?) -> Unit) = addDocument(
+    Collections.COMPETITIONS, Competition(inviteCode = generateInviteCode()), onComplete
+  )
 
   fun setUserScore(userId: String, newScore: Long, onComplete: (Boolean) -> Unit) {
-    updateDocument(User.COLLECTION_NAME, userId, mapOf(User.FIELD_SCORE to newScore), onComplete)
+    updateDocument(Collections.USERS, userId, mapOf(User::score.name to newScore), onComplete)
   }
 
   fun setUserCurrentApp(
@@ -26,15 +24,12 @@ object FirestoreManager {
     since: Date?,
     onComplete: (Boolean) -> Unit
   ) {
-    db.collection(User.COLLECTION_NAME)
-      .document(userId)
-      .update(
-        User.FIELD_CURRENT_APP,
-        appName,
-        User.FIELD_CURRENT_APP_SINCE,
-        since?.let { Timestamp(it) })
-      .addOnSuccessListener { onComplete(true) }
-      .addOnFailureListener { onComplete(false) }
+    updateDocument(
+      Collections.USERS, userId, mapOf(
+        User::currentApp.name to appName,
+        User::currentAppSince.name to since?.let { Timestamp(it) },
+      ), onComplete
+    )
   }
 
   private fun setUserCompetition(
@@ -43,15 +38,15 @@ object FirestoreManager {
     onComplete: (Boolean) -> Unit
   ) {
     updateDocument(
-      User.COLLECTION_NAME, userId, mapOf(User.FIELD_COMPETITION_ID to competitionId), onComplete)
+      Collections.USERS, userId, mapOf(User::competitionId.name to competitionId), onComplete
+    )
   }
 
   fun addLeaderboardListener(
     competitionId: String,
     onResult: (List<User>) -> Unit
   ): ListenerRegistration {
-    return db.collection(User.COLLECTION_NAME)
-      .whereEqualTo(User.FIELD_COMPETITION_ID, competitionId)
+    return db.collection(Collections.USERS).whereEqualTo(User::competitionId.name, competitionId)
       .addSnapshotListener { snapshot, _ ->
         if (snapshot == null) {
           onResult(emptyList())
@@ -63,8 +58,7 @@ object FirestoreManager {
   }
 
   private fun getCompetitionIdFromInviteCode(inviteCode: String, onResult: (String?) -> Unit) {
-    db.collection(Competition.COLLECTION_NAME)
-      .whereEqualTo(Competition.FIELD_INVITE_CODE, inviteCode)
+    db.collection(Collections.COMPETITIONS).whereEqualTo(Competition::inviteCode.name, inviteCode)
       .get()
       .addOnSuccessListener { snapshot -> onResult(snapshot.documents.firstOrNull()?.id) }
       .addOnFailureListener { onResult(null) }
@@ -93,26 +87,13 @@ object FirestoreManager {
   fun updateDocument(
     collection: String,
     documentId: String,
-    data: Map<String, Any>,
-    onComplete: (Boolean) -> Unit
+    data: Map<String, Any?>,
+    onComplete: (Boolean) -> Unit,
   ) {
-    db.collection(collection)
-      .document(documentId)
-      .update(data)
+    db.collection(collection).document(documentId)
+      .update(data + (FIELD_LAST_UPDATED to Timestamp.now()))
       .addOnSuccessListener { onComplete(true) }
       .addOnFailureListener { onComplete(false) }
-  }
-
-  inline fun <reified T> getDocument(
-    collection: String,
-    documentId: String,
-    noinline onResult: (T?) -> Unit
-  ) {
-    db.collection(collection)
-      .document(documentId)
-      .get()
-      .addOnSuccessListener { onResult(it.toObject(T::class.java)) }
-      .addOnFailureListener { onResult(null) }
   }
 
   inline fun <reified T> addDocumentListener(
@@ -134,35 +115,5 @@ object FirestoreManager {
     ref.set(data)
       .addOnSuccessListener { onComplete(ref.id) }
       .addOnFailureListener { onComplete(null) }
-  }
-
-  fun uploadUsageData(userId: String, usageData: Map<String, Long>, onComplete: (Boolean) -> Unit) {
-    val usageCollectionRef =
-      db.collection(User.COLLECTION_NAME).document(userId).collection(UsageData.COLLECTION_NAME)
-    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-    usageCollectionRef
-      .document(today)
-      .get()
-      .addOnSuccessListener { documentSnapshot ->
-        val newData = UsageData(today, usageData, Timestamp(Date()))
-        if (documentSnapshot.exists()) {
-          documentSnapshot.reference
-            .update(
-              UsageData.FIELD_BREAKDOWN,
-              usageData,
-              UsageData.FIELD_LAST_SYNC,
-              newData.lastSync)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
-        } else {
-          usageCollectionRef
-            .document(today)
-            .set(newData)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
-        }
-      }
-      .addOnFailureListener { onComplete(false) }
   }
 }

@@ -25,11 +25,9 @@ class ScreenTimeUploadWorker(appContext: Context, workerParams: WorkerParameters
             applicationContext.packageManager,
             applicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager)
 
-    val usageData = usageStatsProcessor.getApplicationUsageStats()
     val totalUsage = usageStatsProcessor.getTotalUsage()
 
     dataStoreManager.get(DataStoreManager.Key.USER_ID).firstOrNull()?.let { userId ->
-      FirestoreManager.uploadUsageData(userId, usageData) { success -> if (!success) failed = true }
       FirestoreManager.setUserScore(userId, totalUsage) { success -> if (!success) failed = true }
     }
 

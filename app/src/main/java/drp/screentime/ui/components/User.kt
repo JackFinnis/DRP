@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import drp.screentime.firestore.Collections
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.firestore.db
@@ -17,13 +18,15 @@ fun UserView(userId: String) {
   var user by remember { mutableStateOf<User?>(null) }
 
   fun createUser() {
-    db.collection(User.COLLECTION_NAME).document(userId)
-      .set(User(name = generateUserName(), fcmToken = PokeNotificationService.fcmToken))
+    db.collection(Collections.USERS).document(userId).set(User(
+      name = generateUserName(),
+      fcmToken = PokeNotificationService.fcmToken,
+    ))
   }
 
   DisposableEffect(userId) {
     val listener =
-        FirestoreManager.addDocumentListener<User>(User.COLLECTION_NAME, userId) { newUser ->
+      FirestoreManager.addDocumentListener<User>(Collections.USERS, userId) { newUser ->
           if (newUser == null) {
             createUser()
           } else {

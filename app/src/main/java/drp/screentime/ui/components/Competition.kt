@@ -29,10 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.ListenerRegistration
+import drp.screentime.firestore.Collections
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
-import drp.screentime.firestore.db
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +45,8 @@ fun CompetitionView(user: User, competitionId: String) {
   DisposableEffect(competitionId) {
     val listener: ListenerRegistration =
         FirestoreManager.addDocumentListener<Competition>(
-            Competition.COLLECTION_NAME, competitionId) { newCompetition ->
+          Collections.COMPETITIONS, competitionId
+        ) { newCompetition ->
               competition = newCompetition
             }
     onDispose { listener.remove() }
@@ -97,7 +98,11 @@ fun CompetitionView(user: User, competitionId: String) {
           TextButton(
               onClick = {
                 showEditNameAlert = false
-                db.collection(User.COLLECTION_NAME).document(user.id).update(User.FIELD_NAME, name)
+                FirestoreManager.updateDocument(
+                  Collections.USERS,
+                  user.id,
+                  mapOf(User::name.name to name)
+                ) {}
               }) {
                 Text("Save")
               }
