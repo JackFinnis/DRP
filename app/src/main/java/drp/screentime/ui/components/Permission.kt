@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryStd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.StackedBarChart
@@ -43,6 +44,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import drp.screentime.usage.UsageStatsProcessor
 import drp.screentime.util.areAppNotificationsEnabled
+import drp.screentime.util.areBatteryOptimisationsDisabled
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,15 @@ fun PermissionsView() {
           isEnabled = UsageStatsProcessor.Companion::hasUsageStatsAccess,
           description = "Usage data access",
           icon = Icons.Default.StackedBarChart)
+
+      PermissionRow(
+          intent =
+              Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.fromParts("package", packageName, null)
+              },
+          isEnabled = Context::areBatteryOptimisationsDisabled,
+          description = "Run in the background",
+          icon = Icons.Default.BatteryStd)
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         PermissionRow(

@@ -1,6 +1,7 @@
 package drp.screentime.usage
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -8,7 +9,9 @@ import android.os.Build
 import android.os.Build.VERSION_CODES
 import android.os.IBinder
 import android.util.Log
+import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import drp.screentime.R
 import drp.screentime.firestore.FirestoreManager
@@ -19,6 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import java.util.Date
 
 /**
  * Short-lived monitoring service that uploads real-time screen time data to Firestore for a short
@@ -29,9 +33,6 @@ import kotlinx.coroutines.launch
 class DataUploadService : Service() {
 
   companion object {
-    /** Duration, in milliseconds, for which the service should run. */
-    const val UPLOAD_DURATION = 3 * 60 * 1000L
-
     /** Tag for logging. */
     private const val TAG = "DataUploadService"
 
@@ -40,10 +41,17 @@ class DataUploadService : Service() {
 
     /** Notification channel ID. */
     private const val CHANNEL_ID = "DataUploadService"
-  }
 
-  /** Time at which the service started. */
-  private val startTime: Long = System.currentTimeMillis()
+    /** Starts the service. */
+    fun startService(context: android.content.Context) {
+      val startIntent = Intent(context, DataUploadService::class.java)
+      if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
+        context.startForegroundService(startIntent)
+      } else {
+        context.startService(startIntent)
+      }
+    }
+  }
 
   /**
    * Define the job for this service.
@@ -58,39 +66,41 @@ class DataUploadService : Service() {
    *
    * @see job
    */
-  private val scope = CoroutineScope(Dispatchers.IO + job)
+  private val scope = CoroutineScope(job + Dispatchers.IO)
 
   /** Main logic of this service. */
-  private fun monitorAppUsage() {
-    scope.launch {
-      val dataStoreManager = DataStoreManager(applicationContext)
-      val usageStatsProcessor = UsageStatsProcessor(applicationContext)
+  private suspend fun monitorAppUsage() {
+    val dataStoreManager = DataStoreManager(applicationContext)
+    val usageStatsProcessor = UsageStatsProcessor(applicationContext)
 
-      val userId = dataStoreManager.get(DataStoreManager.Key.USER_ID).firstOrNull()
+    val userId = dataStoreManager.get(DataStoreManager.Key.USER_ID).firstOrNull()
 
-      if (userId == null) {
-        Log.e(TAG, "User ID not found. Stopping service.")
-        stopSelf()
-        return@launch
+    if (userId == null) {
+      Log.e(TAG, "User ID not found. Stopping service.")
+      stopSelf()
+      return
+    }
+
+    // Every second until the time limit is reached, upload device usage in real time
+    while (true) {
+      Log.d(TAG, "Uploading data...")
+      val totalUsage = usageStatsProcessor.getTotalUsage()
+      val (currentApp, currentAppSince) = usageStatsProcessor.getLastAppOpen() ?: Pair(null, null)
+
+      FirestoreManager.setUserScore(userId, totalUsage) { success ->
+        if (!success) Log.e(TAG, "Failed to upload user score.")
       }
 
-      // Every second until the time limit is reached, upload device usage in real time
-      while (System.currentTimeMillis() - startTime < UPLOAD_DURATION) {
-        val totalUsage = usageStatsProcessor.getTotalUsage()
-        val currentAppStat = usageStatsProcessor.getCurrentlyOpenApp()
-        val currentApp = currentAppStat?.packageName
-
-        FirestoreManager.setUserScore(userId, totalUsage) { success ->
-          if (!success) Log.e(TAG, "Failed to upload user score.")
-        }
-
-        FirestoreManager.setUserCurrentApp(userId, currentApp, null) { success ->
-          if (!success) Log.e(TAG, "Failed to upload current app.")
-        }
-
-        // Wait for a second before checking again.
-        delay(1000)
+      FirestoreManager.setUserCurrentApp(
+          userId,
+          currentApp,
+          currentAppSince?.let { Date(it) },
+      ) { success ->
+        if (!success) Log.e(TAG, "Failed to upload current app.")
       }
+
+      // Wait for a second before checking again.
+      delay(5000)
     }
   }
 
@@ -102,11 +112,22 @@ class DataUploadService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
+  private val notificationChannel: NotificationChannelCompat
+    get() =
+        NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManager.IMPORTANCE_LOW)
+            .setName("Data Upload Service")
+            .setDescription("Uploads real-time screen time data.")
+            .build()
+
   /** Service is not intended to be bound. */
   override fun onBind(intent: Intent?): IBinder? = null
 
   /** Called when the service is started. */
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    Log.i(TAG, "Starting service.")
+
+    // Create the notification channel (if it doesn't already exist).
+    NotificationManagerCompat.from(this).createNotificationChannel(notificationChannel)
 
     // Start the service in the foreground to prevent it from being killed.
     try {
@@ -127,7 +148,7 @@ class DataUploadService : Service() {
     }
 
     // Start monitoring app usage.
-    monitorAppUsage()
+    scope.launch { monitorAppUsage() }
 
     return super.onStartCommand(intent, flags, startId)
   }

@@ -2,6 +2,7 @@ package drp.screentime.usage
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -9,7 +10,9 @@ import android.content.pm.PackageManager
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 import android.os.Process
+import androidx.compose.ui.util.fastMaxBy
 import drp.screentime.util.addDays
+import drp.screentime.util.getAppName
 import drp.screentime.util.getHomeScreenLaunchers
 import drp.screentime.util.getMidnight
 import drp.screentime.util.isSystemApp
@@ -21,16 +24,40 @@ class UsageStatsProcessor(context: Context) {
   private val usageStatsManager: UsageStatsManager =
       context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
 
-  private val hiddenPackages = setOf("drp.screentime") + pm.getHomeScreenLaunchers()
+  private val hiddenPackages = pm.getHomeScreenLaunchers()
 
   /** Get the total usage for the given day in seconds. */
   fun getTotalUsage(day: Date = Date()): Long {
-    return getUsageStats(day).sumOf { it.totalUsageMillis } / 1000
+    return getUsageStats(day)
+        .filterNot { it.totalUsageMillis <= 0 || isMundane(it.packageName) }
+        .sumOf { it.totalUsageMillis } / 1000
   }
 
-  /** Get the currently open app, if there is one. */
-  fun getCurrentlyOpenApp(): UsageStats? =
-      getUsageStats().filter { it.isValid }.maxByOrNull { it.lastUsageTime }
+  /** Get the currently open app, and the time it was opened. */
+  fun getLastAppOpen(): Pair<String, Long?>? {
+    val usageEvents = getUsageEvents().toList()
+
+    val (openEvents, closeEvents) =
+        usageEvents
+            .filter {
+              !isMundane(it.packageName) &&
+                  it.eventType in (APP_OPEN_EVENT_TYPES + APP_CLOSE_EVENT_TYPES)
+            }
+            .partition { it.eventType in APP_OPEN_EVENT_TYPES }
+
+    val lastUsedApp =
+        openEvents
+            .filter { openEvent ->
+              // Ensure it has no later corresponding close event
+              closeEvents.none { closeEvent ->
+                closeEvent.packageName == openEvent.packageName &&
+                    closeEvent.timeStamp > openEvent.timeStamp
+              }
+            }
+            .fastMaxBy { it.timeStamp } ?: return null
+
+    return pm.getAppName(lastUsedApp.packageName) to lastUsedApp.timeStamp
+  }
 
   /**
    * Get the usage stats for the given day.
@@ -42,13 +69,19 @@ class UsageStatsProcessor(context: Context) {
     val startTime = getMidnight(day)
     val endTime = getMidnight(addDays(day, 1))
 
-    return usageStatsManager
-        .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-        .filterNot { it.isMundane }
+    return usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
   }
 
-  private val UsageStats.isMundane: Boolean
-    get() = totalUsageMillis > 0 && !pm.isSystemApp(packageName) && packageName !in hiddenPackages
+  /** Get the usage events for the last [duration] minutes. */
+  private fun getUsageEvents(duration: Int = 5): Sequence<UsageEvents.Event> {
+    return usageStatsManager
+        .queryEvents(System.currentTimeMillis() - duration * 60 * 1000, System.currentTimeMillis())
+        .iterator()
+        .asSequence()
+  }
+
+  private fun isMundane(packageName: String) =
+      pm.isSystemApp(packageName) || packageName in hiddenPackages
 
   private val UsageStats.isValid: Boolean
     get() {
@@ -96,3 +129,32 @@ private val UsageStats.lastUsageTime: Long
         VERSION.SDK_INT >= VERSION_CODES.Q -> lastTimeVisible
         else -> lastTimeUsed
       }
+
+/** Extension method to convert [UsageEvents] to an [Iterator] of [UsageEvents.Event]. */
+private operator fun UsageEvents.iterator(): Iterator<UsageEvents.Event> =
+    object : Iterator<UsageEvents.Event> {
+      override fun hasNext(): Boolean = this@iterator.hasNextEvent()
+
+      override fun next(): UsageEvents.Event {
+        if (!hasNext()) throw NoSuchElementException()
+        return UsageEvents.Event().apply { this@iterator.getNextEvent(this) }
+      }
+    }
+
+/** Event types that indicate the app was opened. */
+private val APP_OPEN_EVENT_TYPES =
+    setOf(
+        1, // Moved to foreground
+        4, // Rollover from previous tracking interval
+        7, // User interaction
+    )
+
+/** Event types that indicate the app was closed. */
+private val APP_CLOSE_EVENT_TYPES =
+    setOf(
+        2, // Moved to background
+        3, // End of tracking period
+        //        16, // Screen turned off
+        //        23, // Activity stopped
+        //        24, // Activity destroyed
+    )

@@ -32,15 +32,8 @@ class DataUploadWorker(appContext: Context, workerParams: WorkerParameters) :
     val usageStatsProcessor = UsageStatsProcessor(applicationContext)
 
     val totalUsage = usageStatsProcessor.getTotalUsage()
-    val currentAppStat = usageStatsProcessor.getCurrentlyOpenApp()
-
-    val currentApp = currentAppStat?.packageName
-
     dataStoreManager.get(DataStoreManager.Key.USER_ID).firstOrNull()?.let { userId ->
       FirestoreManager.setUserScore(userId, totalUsage) { success -> if (!success) failed = true }
-      FirestoreManager.setUserCurrentApp(userId, currentApp, null) { success ->
-        if (!success) failed = true
-      }
     }
 
     return if (failed) Result.retry() else Result.success()
