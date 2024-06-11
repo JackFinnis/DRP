@@ -41,6 +41,8 @@ class UsageStatsProcessor(context: Context) {
         usageEvents
             .filter {
               !isMundane(it.packageName) &&
+                  // Filter out ourselves for now. TODO since this could be cool to show in the UI
+                  it.packageName != "drp.screentime" &&
                   it.eventType in (APP_OPEN_EVENT_TYPES + APP_CLOSE_EVENT_TYPES)
             }
             .partition { it.eventType in APP_OPEN_EVENT_TYPES }
@@ -83,16 +85,7 @@ class UsageStatsProcessor(context: Context) {
   private fun isMundane(packageName: String) =
       pm.isSystemApp(packageName) || packageName in hiddenPackages
 
-  private val UsageStats.isValid: Boolean
-    get() {
-      val currentTime = System.currentTimeMillis() / 1000
-      return lastUsageTime in (currentTime - STALE_THRESHOLD)..currentTime
-    }
-
   companion object {
-    /** Threshold, in seconds, after which the usage statistic is considered stale. */
-    private const val STALE_THRESHOLD = 3 * 60
-
     fun hasUsageStatsAccess(context: Context): Boolean {
       val appOps: AppOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
       @Suppress("DEPRECATION")
@@ -119,17 +112,6 @@ private val UsageStats.totalUsageMillis: Long
         else -> totalTimeInForeground
       }
 
-/**
- * Returns [UsageStats.getLastTimeVisible] or [UsageStats.getLastTimeUsed] as appropriate, depending
- * on the device's Android version.
- */
-private val UsageStats.lastUsageTime: Long
-  get() =
-      when {
-        VERSION.SDK_INT >= VERSION_CODES.Q -> lastTimeVisible
-        else -> lastTimeUsed
-      }
-
 /** Extension method to convert [UsageEvents] to an [Iterator] of [UsageEvents.Event]. */
 private operator fun UsageEvents.iterator(): Iterator<UsageEvents.Event> =
     object : Iterator<UsageEvents.Event> {
@@ -154,7 +136,4 @@ private val APP_CLOSE_EVENT_TYPES =
     setOf(
         2, // Moved to background
         3, // End of tracking period
-        //        16, // Screen turned off
-        //        23, // Activity stopped
-        //        24, // Activity destroyed
     )
