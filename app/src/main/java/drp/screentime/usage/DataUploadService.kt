@@ -148,7 +148,7 @@ class DataUploadService : Service() {
     // Start monitoring app usage.
     scope.launch { monitorAppUsage() }
 
-    return super.onStartCommand(intent, flags, startId)
+    return START_STICKY
   }
 
   /** Lifecycle cleanup. */
