@@ -30,7 +30,7 @@ class UsageStatsProcessor(context: Context) {
 
   /** Get the currently open app, if there is one. */
   fun getCurrentlyOpenApp(): UsageStats? =
-    getUsageStats().filter { it.isValid }.maxByOrNull { it.lastUsageTime }
+      getUsageStats().filter { it.isValid }.maxByOrNull { it.lastUsageTime }
 
   /**
    * Get the usage stats for the given day.
@@ -42,12 +42,14 @@ class UsageStatsProcessor(context: Context) {
     val startTime = getMidnight(day)
     val endTime = getMidnight(addDays(day, 1))
 
-    return usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-      .filterNot { it.isMundane }
+    return usageStatsManager
+        .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+        .filterNot { it.isMundane }
   }
 
   private val UsageStats.isMundane: Boolean
     get() = totalUsageMillis > 0 && !pm.isSystemApp(packageName) && packageName !in hiddenPackages
+
   private val UsageStats.isValid: Boolean
     get() {
       val currentTime = System.currentTimeMillis() / 1000
@@ -73,16 +75,24 @@ class UsageStatsProcessor(context: Context) {
   }
 }
 
-/** Returns [UsageStats.getTotalTimeVisible] or [UsageStats.getTotalTimeInForeground] as appropriate, depending on the device's Android version. */
+/**
+ * Returns [UsageStats.getTotalTimeVisible] or [UsageStats.getTotalTimeInForeground] as appropriate,
+ * depending on the device's Android version.
+ */
 private val UsageStats.totalUsageMillis: Long
-  get() = when {
-    VERSION.SDK_INT >= VERSION_CODES.Q -> totalTimeVisible
-    else -> totalTimeInForeground
-  }
+  get() =
+      when {
+        VERSION.SDK_INT >= VERSION_CODES.Q -> totalTimeVisible
+        else -> totalTimeInForeground
+      }
 
-/** Returns [UsageStats.getLastTimeVisible] or [UsageStats.getLastTimeUsed] as appropriate, depending on the device's Android version. */
+/**
+ * Returns [UsageStats.getLastTimeVisible] or [UsageStats.getLastTimeUsed] as appropriate, depending
+ * on the device's Android version.
+ */
 private val UsageStats.lastUsageTime: Long
-  get() = when {
-    VERSION.SDK_INT >= VERSION_CODES.Q -> lastTimeVisible
-    else -> lastTimeUsed
-  }
+  get() =
+      when {
+        VERSION.SDK_INT >= VERSION_CODES.Q -> lastTimeVisible
+        else -> lastTimeUsed
+      }

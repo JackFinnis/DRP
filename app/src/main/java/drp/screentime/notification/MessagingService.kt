@@ -3,7 +3,7 @@ package drp.screentime.notification
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import drp.screentime.usage.DataUploader
+import drp.screentime.usage.DataUploadWorker
 
 class MessagingService : FirebaseMessagingService() {
 
@@ -16,7 +16,7 @@ class MessagingService : FirebaseMessagingService() {
       Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
       when (val action = remoteMessage.data["action"]) {
-        Actions.REQUEST_DATA_UPDATE -> DataUploader.uploadAsap(applicationContext)
+        Actions.REQUEST_DATA_UPDATE -> DataUploadWorker.uploadAsap(applicationContext)
         else -> Log.d(TAG, "Unknown action: $action")
       }
     }

@@ -13,7 +13,7 @@ import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.firestore.db
 import drp.screentime.notification.MessagingService
-import drp.screentime.usage.DataUploader
+import drp.screentime.usage.DataUploadWorker
 import drp.screentime.util.generateUserName
 
 @Composable
@@ -42,7 +42,7 @@ fun UserView(userId: String) {
 
   if (user != null) {
     LaunchedEffect(Unit) {
-      DataUploader.uploadAsap(context)
+      DataUploadWorker.uploadAsap(context)
     }
 
     if (user!!.competitionId != null) {
