@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
@@ -35,8 +39,8 @@ import com.google.firebase.functions.functions
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LeaderboardView(competitionId: String, userId: String) {
@@ -53,7 +57,9 @@ fun LeaderboardView(competitionId: String, userId: String) {
   }
 
   LazyColumn(
-      modifier = Modifier.fillMaxWidth().padding(16.dp),
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
@@ -86,19 +92,13 @@ fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
 
   Card(
       colors = CardDefaults.cardColors(containerColor = fillColor),
-      onClick = {
-        if (user.id != myUserId && user.currentApp != null)
-            Firebase.functions
-                .getHttpsCallable("poke")
-                .call(mapOf("toUserID" to user.id, "fromUserID" to myUserId))
-      },
       shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
             verticalAlignment = Alignment.CenterVertically) {
               Text(
                   place.toString(),
-                  modifier = Modifier.width(36.dp),
+                  modifier = Modifier.width(32.dp),
                   style = MaterialTheme.typography.titleMedium)
               if (myUserId == user.id || user.currentApp == null) {
                 Text(user.name, style = MaterialTheme.typography.titleMedium)
@@ -107,8 +107,6 @@ fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
                   Text(user.name, style = MaterialTheme.typography.titleMedium)
                   Spacer(Modifier.height(4.dp))
                   Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("⦿", style = MaterialTheme.typography.labelSmall)
-                    Spacer(Modifier.width(6.dp))
                     Text(
                         "Using ${user.currentApp} for ${formatDuration(time)}",
                         style = MaterialTheme.typography.labelSmall,
@@ -116,8 +114,26 @@ fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
                   }
                 }
               }
-              Spacer(Modifier.weight(1f).fillMaxHeight())
-              Text(text = formatDuration(user.score), style = MaterialTheme.typography.titleMedium)
+          Spacer(
+            Modifier
+              .weight(1f)
+              .fillMaxHeight()
+          )
+          if (user.id != myUserId && user.currentApp != null) {
+            Button(onClick = {
+              Firebase.functions.getHttpsCallable("poke")
+                .call(mapOf("toUserID" to user.id, "fromUserID" to myUserId))
+            }, shape = RoundedCornerShape(16.dp)) {
+              Text("Poke")
             }
+            Spacer(modifier = Modifier.width(16.dp))
+          }
+          Text(
+            text = formatDuration(user.score),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
+            textAlign = TextAlign.Right
+          )
+        }
       }
 }
