@@ -1,5 +1,9 @@
 package drp.screentime.notification
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -36,6 +40,23 @@ class MessagingService : FirebaseMessagingService() {
   companion object {
     private const val TAG = "SCREENTIME"
     var fcmToken: String? = null
+
+    fun createNotificationChannel(context: Context) {
+      // Check if the device is running Android 8.0 or higher
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channelId = "poke_channel"
+        val channelName = "Poke"
+        val channelDescription = "Displayed when users poke you"
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(channelId, channelName, importance).apply {
+          description = channelDescription
+        }
+        // Register the channel with the system
+        val notificationManager: NotificationManager =
+          context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+      }
+    }
   }
 
   object Actions {
