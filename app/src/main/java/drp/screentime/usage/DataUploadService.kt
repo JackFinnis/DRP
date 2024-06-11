@@ -136,8 +136,6 @@ class DataUploadService : Service() {
           NOTIFICATION_ID,
           notification,
           when {
-            Build.VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE ->
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
             Build.VERSION.SDK_INT >= VERSION_CODES.Q ->
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             else -> 0
