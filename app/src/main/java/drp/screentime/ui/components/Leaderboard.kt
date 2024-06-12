@@ -180,11 +180,12 @@ fun LeaderboardEntry(
                 "fromUserID" to myUserId,
                 "message" to pokeMessage,
               )
-            ).addOnSuccessListener { showPokeAlert = false }.addOnFailureListener {
+            ).addOnFailureListener {
               Log.e("Leaderboard", "Failed to poke user", it)
               showPokeAlert = false
             }
             pokeMessage = ""
+            showPokeAlert = false
           },
         ) {
           Text("Poke")
