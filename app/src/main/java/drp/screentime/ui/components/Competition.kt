@@ -1,18 +1,15 @@
 package drp.screentime.ui.components
 
 import android.content.Intent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -56,47 +53,50 @@ fun CompetitionView(user: User, competitionId: String) {
     LoadingView()
   } else {
     Scaffold(
-        topBar = { LargeTopAppBar(title = { Text("Leaderboard") }, actions = {
-          IconButton(onClick = {
-            competition = null
-            FirestoreManager.updateDocument(
-                Collections.USERS, user.id, mapOf(User::competitionId.name to null)) {}
-          }) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Leave competition")
-          }
-        }) },
+      topBar = {
+        LargeTopAppBar(
+          title = { Text("Leaderboard") },
+          actions = {
+            IconButton(onClick = {
+              competition = null
+              FirestoreManager.updateDocument(
+                Collections.USERS, user.id, mapOf(User::competitionId.name to null)
+              ) {}
+            }) {
+              Icon(
+                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                contentDescription = "Leave competition"
+              )
+            }
+          },
+        )
+      },
+      floatingActionButton = {
+        ExtendedFloatingActionButton(
+          onClick = {
+            val sendIntent: Intent =
+              Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
+                putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
+                putExtra(Intent.EXTRA_TITLE, "Competition invite code")
+              }
+            val shareIntent = Intent.createChooser(sendIntent, null)
+            context.startActivity(shareIntent)
+          },
+        ) {
+          Icon(
+            imageVector = Icons.Default.PersonAdd,
+            contentDescription = "Invite friends",
+            modifier = Modifier.padding(end = 12.dp)
+          )
+          Text("Invite friends")
+        }
+      },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        Box(modifier = Modifier.weight(1f)) {
-          LeaderboardView(competitionId, user.id, showEditNameAlert)
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp)) {
-              LargeButton(
-                  modifier = Modifier.weight(1f),
-                  onClick = {
-                    val sendIntent: Intent =
-                        Intent().apply {
-                          action = Intent.ACTION_SEND
-                          type = "text/plain"
-                          putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
-                          putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
-                          putExtra(Intent.EXTRA_TITLE, "Competition invite code")
-                        }
-                    val shareIntent = Intent.createChooser(sendIntent, null)
-                    context.startActivity(shareIntent)
-                  },
-                  icon = Icons.Default.PersonAdd,
-                  text = "Invite friends",
-                  tonal = false)
-              LargeButton(
-                  modifier = Modifier.weight(1f),
-                  onClick = { showEditNameAlert.value = true },
-                  icon = Icons.Default.Edit,
-                  text = "Edit name",
-                  tonal = true)
-            }
+        LeaderboardView(competitionId, user.id, showEditNameAlert)
       }
     }
   }

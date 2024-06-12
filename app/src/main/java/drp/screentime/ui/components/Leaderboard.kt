@@ -7,14 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.AlertDialog
@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -114,58 +116,102 @@ fun LeaderboardEntry(
     }
   }
 
-  val fillColor: Color =
-      when {
-        myUserId == user.id -> colorScheme.primary
-        else -> colorScheme.secondaryContainer
-      }
+  val fillColor: Color = when (user.id) {
+    myUserId -> colorScheme.primary
+    else -> colorScheme.secondaryContainer
+  }
+  val textColor: Color = when (user.id) {
+    myUserId -> colorScheme.onPrimary
+    else -> colorScheme.onSecondaryContainer
+  }
 
   Card(
-      colors = CardDefaults.cardColors(containerColor = fillColor),
-      shape = RoundedCornerShape(16.dp),
-      onClick = {
-        if (user.id == myUserId) {
-          showEditNameAlert.value = true
-        }
-      }) {
-        Row(
-            modifier = Modifier.padding(20.dp, 16.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-              Text(
-                  place.toString(),
-                  modifier = Modifier.width(32.dp), style = typography.titleMedium
-              )
-              if (pokable) {
-                Column {
-                  Text(user.name, style = typography.titleMedium)
-                  Spacer(Modifier.height(4.dp))
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                      "Using ${user.currentApp} for ${formatDuration(time)}",
-                      style = typography.labelSmall,
-                    )
-                  }
-                }
-              } else {
-                Text(user.name, style = typography.titleMedium)
-              }
-          Spacer(
-            Modifier
-              .weight(1f)
-              .fillMaxHeight()
-          )
-              if (pokable) {
-                Button(onClick = {
-                  showPokeAlert = true
-                }, shape = RoundedCornerShape(16.dp)) { Text("Poke") }
-                Spacer(modifier = Modifier.width(16.dp))
-              }
-              Text(
-                  text = formatDuration(user.score), style = typography.titleMedium,
-                  modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
-                  textAlign = TextAlign.Right)
-            }
+    colors = CardDefaults.cardColors(containerColor = fillColor),
+    onClick = {
+      if (user.id == myUserId) {
+        showEditNameAlert.value = true
       }
+    },
+  ) {
+    Column(
+      modifier = Modifier.padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Column(
+          verticalArrangement = Arrangement.Center,
+          modifier = Modifier.padding(end = 12.dp),
+        ) {
+          Surface(
+            shape = CircleShape,
+            color = when (place) {
+              1 -> Color(0xFFFFD700)
+              2 -> Color(0xFF999999)
+              3 -> Color(0xFFCD7232)
+              else -> fillColor
+            },
+            modifier = Modifier
+              .width(32.dp)
+              .height(32.dp),
+            shadowElevation = if (place <= 3) 2.dp else 0.dp,
+          ) {
+            Text(
+              text = place.toString(),
+              style = typography.titleMedium,
+              color = when (place) {
+                1 -> Color.Black
+                2 -> Color.White
+                3 -> Color.White
+                else -> textColor
+              },
+              textAlign = TextAlign.Center,
+              modifier = Modifier
+                .padding(4.dp)
+                .wrapContentHeight(Alignment.CenterVertically),
+            )
+          }
+        }
+        Text(
+          text = user.name,
+          style = typography.titleMedium,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth(),
+        )
+        Text(
+          text = formatDuration(user.score),
+          style = typography.titleMedium,
+          modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
+          textAlign = TextAlign.Right
+        )
+      }
+      if (pokable) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(
+            text = buildAnnotatedString {
+              append("Using ")
+              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                append(user.currentApp!!)
+              }
+              append(" for ")
+              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                append(formatDuration(time))
+              }
+            },
+            style = typography.bodyMedium,
+            modifier = Modifier
+              .weight(1f)
+              .fillMaxWidth(),
+          )
+          Button(onClick = { showPokeAlert = true }) { Text("Poke") }
+        }
+      }
+    }
+  }
 
   if (showPokeAlert) {
     AlertDialog(

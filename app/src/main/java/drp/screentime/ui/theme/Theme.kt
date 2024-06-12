@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import com.example.ui.theme.AppTypography
+import drp.screentime.ui.theme.AppShapes
 
 private val lightScheme =
     lightColorScheme(
@@ -90,5 +91,7 @@ fun AppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable ()
   MaterialTheme(
       colorScheme = if (darkTheme) darkScheme else lightScheme,
       typography = AppTypography,
-      content = content)
+    content = content,
+    shapes = AppShapes,
+  )
 }

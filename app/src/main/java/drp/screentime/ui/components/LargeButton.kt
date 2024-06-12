@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -27,7 +26,6 @@ fun LargeButton(
 ) {
   if (tonal) {
     FilledTonalButton(
-        shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(16.dp),
         modifier = modifier,
         onClick = onClick) {
@@ -39,7 +37,6 @@ fun LargeButton(
         }
   } else {
     Button(
-        shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(16.dp),
         modifier = modifier,
         onClick = onClick) {
