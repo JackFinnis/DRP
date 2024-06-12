@@ -1,5 +1,6 @@
 package drp.screentime.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +15,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -34,7 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Firebase
@@ -65,7 +75,9 @@ fun LeaderboardView(
   }
 
   LazyColumn(
-      modifier = Modifier.fillMaxWidth().padding(16.dp),
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
@@ -104,8 +116,8 @@ fun LeaderboardEntry(
 
   val fillColor: Color =
       when {
-        myUserId == user.id -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.secondaryContainer
+        myUserId == user.id -> colorScheme.primary
+        else -> colorScheme.secondaryContainer
       }
 
   Card(
@@ -121,30 +133,35 @@ fun LeaderboardEntry(
             verticalAlignment = Alignment.CenterVertically) {
               Text(
                   place.toString(),
-                  modifier = Modifier.width(32.dp),
-                  style = MaterialTheme.typography.titleMedium)
+                  modifier = Modifier.width(32.dp), style = typography.titleMedium
+              )
               if (pokable) {
                 Column {
-                  Text(user.name, style = MaterialTheme.typography.titleMedium)
+                  Text(user.name, style = typography.titleMedium)
                   Spacer(Modifier.height(4.dp))
                   Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                       "Using ${user.currentApp} for ${formatDuration(time)}",
-                      style = MaterialTheme.typography.labelSmall,
+                      style = typography.labelSmall,
                     )
                   }
                 }
               } else {
-                Text(user.name, style = MaterialTheme.typography.titleMedium)
+                Text(user.name, style = typography.titleMedium)
               }
-              Spacer(Modifier.weight(1f).fillMaxHeight())
+          Spacer(
+            Modifier
+              .weight(1f)
+              .fillMaxHeight()
+          )
               if (pokable) {
-                Button(onClick = {}, shape = RoundedCornerShape(16.dp)) { Text("Poke") }
+                Button(onClick = {
+                  showPokeAlert = true
+                }, shape = RoundedCornerShape(16.dp)) { Text("Poke") }
                 Spacer(modifier = Modifier.width(16.dp))
               }
               Text(
-                  text = formatDuration(user.score),
-                  style = MaterialTheme.typography.titleMedium,
+                  text = formatDuration(user.score), style = typography.titleMedium,
                   modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
                   textAlign = TextAlign.Right)
             }
@@ -152,32 +169,71 @@ fun LeaderboardEntry(
 
   if (showPokeAlert) {
     AlertDialog(
-        onDismissRequest = { showPokeAlert = false },
-        confirmButton = {
-          TextButton(
-              onClick = {
-                Firebase.functions
-                    .getHttpsCallable("poke")
-                    .call(
-                        mapOf(
-                            "toUserID" to user.id,
-                            "fromUserID" to myUserId,
-                            "message" to pokeMessage))
-                pokeMessage = ""
-              }) {
-                Text("Poke")
+      confirmButton = {
+        TextButton(
+          colors = ButtonDefaults.buttonColors(),
+          enabled = pokable,
+          onClick = {
+            Firebase.functions.getHttpsCallable("poke").call(
+              mapOf(
+                "toUserID" to user.id,
+                "fromUserID" to myUserId,
+                "message" to pokeMessage,
+              )
+            ).addOnSuccessListener { showPokeAlert = false }.addOnFailureListener {
+              Log.e("Leaderboard", "Failed to poke user", it)
+              showPokeAlert = false
+            }
+            pokeMessage = ""
+          },
+        ) {
+          Text("Poke")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { showPokeAlert = false }) { Text("Cancel") }
+      },
+      onDismissRequest = { showPokeAlert = false },
+      icon = {
+        Icon(
+          imageVector = Icons.Default.TouchApp,
+          contentDescription = "Poke",
+        )
+      },
+      title = { Text("Poke user?") },
+      text = {
+        Column {
+          Text(buildAnnotatedString {
+            append("Send ")
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+              append(user.name)
+            }
+            append(" a reminder to take a break from ")
+            if (user.currentApp == null) {
+              append("their device")
+            } else {
+              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                append(user.currentApp)
               }
-        },
-        dismissButton = {
-          TextButton(onClick = { showPokeAlert = false }) { Text("Cancel") }
-        },
-        title = { Text("Poke ${user.name}?") },
-        text = {
-          TextField(
-              value = pokeMessage,
-              onValueChange = { pokeMessage = it },
-              label = { Text("Add message (optional)") },
-              modifier = Modifier.fillMaxWidth())
-        })
+            }
+            append("?")
+          })
+          Spacer(Modifier.height(16.dp))
+          TextField(value = pokeMessage,
+            onValueChange = { pokeMessage = it },
+            label = { Text("Add message (optional)") },
+            modifier = Modifier.fillMaxWidth()
+          )
+          if (!pokable) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+              "${user.name} is no longer using an app and cannot be poked.",
+              style = typography.bodySmall,
+              color = colorScheme.error
+            )
+          }
+        }
+      },
+    )
   }
 }

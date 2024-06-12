@@ -5,8 +5,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import drp.screentime.R
 import drp.screentime.usage.DataUploadWorker
 
 class MessagingService : FirebaseMessagingService() {
@@ -25,10 +27,8 @@ class MessagingService : FirebaseMessagingService() {
       }
     }
 
-    // Check if message contains a notification payload.
     remoteMessage.notification?.let {
-      Log.d(TAG, "Message Notification Body: ${it.body}")
-      // Handle notification payload here.
+      showNotification(it)
     }
   }
 
@@ -37,18 +37,28 @@ class MessagingService : FirebaseMessagingService() {
     fcmToken = token
   }
 
+  private fun showNotification(notification: RemoteMessage.Notification) {
+    val notificationBuilder =
+      NotificationCompat.Builder(this, CHANNEL_ID).setSmallIcon(R.mipmap.ic_launcher_round)
+        .setContentTitle(notification.title).setContentText(notification.body)
+        .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true)
+
+    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+  }
+
   companion object {
-    private const val TAG = "SCREENTIME"
+    private const val TAG = "ScreenTimeMessagingService"
+    private const val CHANNEL_ID = "poke_channel"
     var fcmToken: String? = null
 
     fun createNotificationChannel(context: Context) {
       // Check if the device is running Android 8.0 or higher
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channelId = "poke_channel"
         val channelName = "Poke"
         val channelDescription = "Displayed when users poke you"
         val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(channelId, channelName, importance).apply {
+        val channel = NotificationChannel(CHANNEL_ID, channelName, importance).apply {
           description = channelDescription
         }
         // Register the channel with the system
