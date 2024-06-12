@@ -37,6 +37,7 @@ fun NoCompetitionView(userId: String) {
   var joinCompetitionCode by remember { mutableStateOf("") }
   var showJoinCompetitionAlert by remember { mutableStateOf(false) }
   var joinCompetitionError by remember { mutableStateOf(false) }
+  var loading by remember { mutableStateOf(false) }
 
   Scaffold { contentPadding ->
     Column(modifier = Modifier.padding(contentPadding).padding(16.dp)) {
@@ -56,7 +57,10 @@ fun NoCompetitionView(userId: String) {
       Row {
         LargeButton(
             modifier = Modifier.weight(1f),
-            onClick = { FirestoreManager.addAndJoinCompetition(userId, onComplete = {}) },
+            onClick = {
+              loading = true
+              FirestoreManager.addAndJoinCompetition(userId, onComplete = { loading = false })
+            },
             icon = Icons.Default.AddChart,
             text = "Start competition",
             tonal = false)
@@ -100,7 +104,10 @@ fun NoCompetitionView(userId: String) {
                 onValueChange = { joinCompetitionCode = it.uppercase() },
                 label = { Text("Invite code") },
                 modifier = Modifier.fillMaxWidth(),
-                supportingText = { if (joinCompetitionError) Text("Invalid invite code", color = MaterialTheme.colorScheme.error) })
+                supportingText = {
+                  if (joinCompetitionError)
+                      Text("Invalid invite code", color = MaterialTheme.colorScheme.error)
+                })
           })
     }
   }

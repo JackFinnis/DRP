@@ -58,6 +58,7 @@ fun CompetitionView(user: User, competitionId: String) {
     Scaffold(
         topBar = { LargeTopAppBar(title = { Text("Leaderboard") }, actions = {
           IconButton(onClick = {
+            competition = null
             FirestoreManager.updateDocument(
                 Collections.USERS, user.id, mapOf(User::competitionId.name to null)) {}
           }) {
