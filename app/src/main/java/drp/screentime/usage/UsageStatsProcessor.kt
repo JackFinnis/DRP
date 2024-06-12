@@ -74,7 +74,7 @@ class UsageStatsProcessor(context: Context) {
       lastUsedApp.packageName,
       pm.getAppName(lastUsedApp.packageName),
       lastUsedActivity.className,
-      pm.getActivityName(lastUsedActivity.packageName, lastUsedActivity.className),
+      lastUsedActivity.className?.let { pm.getActivityName(lastUsedActivity.packageName, it) },
       lastUsedApp.timeStamp,
     )
   }
