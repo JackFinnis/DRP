@@ -58,24 +58,12 @@ class UsageStatsProcessor(context: Context) {
     val lastUsedActivity = currentActivities
       .fastMaxBy { it.timeStamp } ?: return null
 
-    val appCloseEvents =
-      closeEvents.filter { event -> event.packageName == lastUsedActivity.packageName }
-    val lastUsedApp =
-      openEvents.filter { event -> event.packageName == lastUsedActivity.packageName }
-        .filter { openEvent ->
-          appCloseEvents.none { closeEvent ->
-            openEvent.timeStamp > closeEvent.timeStamp &&
-                openEvent.timeStamp - closeEvent.timeStamp < 15 * 1000
-          }
-        }
-        .fastMaxBy { it.timeStamp } ?: return null
-
     return AppLiveUsageInfo(
-      lastUsedApp.packageName,
-      pm.getAppName(lastUsedApp.packageName),
+      lastUsedActivity.packageName,
+      pm.getAppName(lastUsedActivity.packageName),
       lastUsedActivity.className,
       lastUsedActivity.className?.let { pm.getActivityName(lastUsedActivity.packageName, it) },
-      lastUsedApp.timeStamp,
+      lastUsedActivity.timeStamp,
     )
   }
 
