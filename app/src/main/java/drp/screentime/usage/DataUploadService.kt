@@ -89,6 +89,7 @@ class DataUploadService : Service() {
 
     var firstTime = true
     var lastApp: AppLiveUsageInfo? = null
+    val lastTimePerApp = mutableMapOf<String, Pair<Long, Long>>()
 
     // Every second until the time limit is reached, upload device usage in real time
     while (true) {
@@ -99,10 +100,42 @@ class DataUploadService : Service() {
       val currentAppData = if (isAwake) usageStatsProcessor.getLastAppOpen() else null
 
       if (lastApp != currentAppData || firstTime) {
-        lastApp = currentAppData
+        Log.d("SCREENTIME", lastApp?.usedSince.toString())
+        Log.d("SCREENTIME", System.currentTimeMillis().toString())
+
+        lastApp =
+          if (lastApp != null && lastApp.packageName == currentAppData?.packageName) {
+            // if app is same, but activity is different
+            currentAppData.copy(usedSince = lastApp.usedSince)
+          } else {
+            // if app changed, or app closed, or app opened
+
+            if (lastApp != null)
+            // if app changed or closed, update its close time
+              lastTimePerApp[lastApp.packageName] =
+                Pair(lastApp.usedSince, System.currentTimeMillis())
+
+            var currentData = currentAppData
+
+            if (currentAppData != null) {
+              // if user is currently in an app
+
+              val lastTimes = lastTimePerApp[currentAppData.packageName]
+              if (lastTimes != null) {
+                val (lastStartTime, lastCloseTime) = lastTimes
+                if (currentAppData.usedSince - lastCloseTime < 15 * 1000) {
+                  // if user was in same app within last few seconds
+                  currentData = currentAppData.copy(usedSince = lastStartTime)
+                }
+              }
+            }
+
+            currentData
+          }
+
         firstTime = false
 
-        FirestoreManager.setUserCurrentApp(userId, currentAppData) { success ->
+        FirestoreManager.setUserCurrentApp(userId, lastApp) { success ->
           if (!success) Log.e(TAG, "Failed to upload current app.")
         }
 
