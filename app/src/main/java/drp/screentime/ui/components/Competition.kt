@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -53,7 +56,14 @@ fun CompetitionView(user: User, competitionId: String) {
     LoadingView()
   } else {
     Scaffold(
-        topBar = { LargeTopAppBar(title = { Text("Leaderboard") }) },
+        topBar = { LargeTopAppBar(title = { Text("Leaderboard") }, actions = {
+          IconButton(onClick = {
+            FirestoreManager.updateDocument(
+                Collections.USERS, user.id, mapOf(User::competitionId.name to null)) {}
+          }) {
+            Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Leave competition")
+          }
+        }) },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
         Box(modifier = Modifier.weight(1f)) {
@@ -103,7 +113,9 @@ fun CompetitionView(user: User, competitionId: String) {
                 Text("Save")
               }
         },
-        dismissButton = { TextButton(onClick = { showEditNameAlert.value = false }) { Text("Cancel") } },
+        dismissButton = {
+          TextButton(onClick = { showEditNameAlert.value = false }) { Text("Cancel") }
+        },
         title = { Text("Enter your name") },
         text = {
           TextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
