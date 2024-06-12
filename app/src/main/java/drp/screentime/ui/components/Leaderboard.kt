@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.functions
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
@@ -230,6 +231,20 @@ fun LeaderboardEntry(
               Log.e("Leaderboard", "Failed to poke user", it)
               showPokeAlert = false
             }
+            // TODO: remove once logging finished=
+            FirebaseFirestore.getInstance().collection("config")
+              .document("logging").get()
+              .addOnSuccessListener { data ->
+                if (data.getBoolean("pokes")!!) {
+                  val ref = FirebaseFirestore.getInstance().collection("pokeCalls").document()
+                  ref.set(mapOf(
+                    "fromID" to myUserId,
+                    "toID" to user.id,
+                    "timestamp" to Timestamp.now()
+                  ))
+                }
+              }
+
             pokeMessage = ""
             showPokeAlert = false
           },

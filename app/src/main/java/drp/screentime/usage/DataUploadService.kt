@@ -15,6 +15,8 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
 import drp.screentime.R
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
@@ -100,9 +102,6 @@ class DataUploadService : Service() {
       val currentAppData = if (isAwake) usageStatsProcessor.getLastAppOpen() else null
 
       if (lastApp != currentAppData || firstTime) {
-        Log.d("SCREENTIME", lastApp?.usedSince.toString())
-        Log.d("SCREENTIME", System.currentTimeMillis().toString())
-
         lastApp =
           if (lastApp != null && lastApp.packageName == currentAppData?.packageName) {
             // if app is same, but activity is different
@@ -110,10 +109,29 @@ class DataUploadService : Service() {
           } else {
             // if app changed, or app closed, or app opened
 
-            if (lastApp != null)
-            // if app changed or closed, update its close time
+            if (lastApp != null) {
+              // if app changed or closed, update its close time
               lastTimePerApp[lastApp.packageName] =
                 Pair(lastApp.usedSince, System.currentTimeMillis())
+
+              // TODO: remove once logging finished
+              val lA = lastApp
+              FirebaseFirestore.getInstance().collection("config")
+                .document("logging").get()
+                .addOnSuccessListener { data ->
+                  if (data.getBoolean("leaves")!!) {
+                    val ref = FirebaseFirestore.getInstance().collection("appLeaves").document()
+                    ref.set(
+                      mapOf(
+                        "packageName" to lA.packageName,
+                        "userID" to userId,
+                        "timestamp" to Timestamp.now()
+                      )
+                    )
+                  }
+                }
+
+            }
 
             var currentData = currentAppData
 
