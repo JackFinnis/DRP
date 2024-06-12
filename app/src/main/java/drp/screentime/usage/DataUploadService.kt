@@ -22,7 +22,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * Short-lived monitoring service that uploads real-time screen time data to Firestore for a short
@@ -85,17 +84,13 @@ class DataUploadService : Service() {
     while (true) {
       Log.d(TAG, "Uploading data...")
       val totalUsage = usageStatsProcessor.getTotalUsage()
-      val (currentApp, currentAppSince) = usageStatsProcessor.getLastAppOpen() ?: Pair(null, null)
+      val currentAppData = usageStatsProcessor.getLastAppOpen()
 
       FirestoreManager.setUserScore(userId, totalUsage) { success ->
         if (!success) Log.e(TAG, "Failed to upload user score.")
       }
 
-      FirestoreManager.setUserCurrentApp(
-          userId,
-          currentApp,
-          currentAppSince?.let { Date(it) },
-      ) { success ->
+      FirestoreManager.setUserCurrentApp(userId, currentAppData) { success ->
         if (!success) Log.e(TAG, "Failed to upload current app.")
       }
 

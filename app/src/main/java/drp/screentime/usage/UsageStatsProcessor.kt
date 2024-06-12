@@ -12,6 +12,7 @@ import android.os.Build.VERSION_CODES
 import android.os.Process
 import androidx.compose.ui.util.fastMaxBy
 import drp.screentime.util.addDays
+import drp.screentime.util.getActivityName
 import drp.screentime.util.getAppName
 import drp.screentime.util.getHomeScreenLaunchers
 import drp.screentime.util.getMidnight
@@ -34,15 +35,13 @@ class UsageStatsProcessor(context: Context) {
   }
 
   /** Get the currently open app, and the time it was opened. */
-  fun getLastAppOpen(): Pair<String, Long?>? {
+  fun getLastAppOpen(): AppLiveUsageInfo? {
     val usageEvents = getUsageEvents().toList()
 
     val (openEvents, closeEvents) =
         usageEvents
             .filter {
               !isMundane(it.packageName) &&
-                  // Filter out ourselves for now. TODO since this could be cool to show in the UI
-                  it.packageName != "drp.screentime" &&
                   it.eventType in (APP_OPEN_EVENT_TYPES + APP_CLOSE_EVENT_TYPES)
             }
             .partition { it.eventType in APP_OPEN_EVENT_TYPES }
@@ -58,7 +57,13 @@ class UsageStatsProcessor(context: Context) {
             }
             .fastMaxBy { it.timeStamp } ?: return null
 
-    return pm.getAppName(lastUsedApp.packageName) to lastUsedApp.timeStamp
+    return AppLiveUsageInfo(
+        lastUsedApp.packageName,
+        pm.getAppName(lastUsedApp.packageName),
+        lastUsedApp.className,
+        pm.getActivityName(lastUsedApp.packageName, lastUsedApp.className),
+        lastUsedApp.timeStamp,
+    )
   }
 
   /**

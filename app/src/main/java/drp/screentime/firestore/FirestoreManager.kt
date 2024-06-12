@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import drp.screentime.firestore.Document.Companion.FIELD_LAST_UPDATED
+import drp.screentime.usage.AppLiveUsageInfo
 import drp.screentime.util.generateInviteCode
 import java.util.Date
 
@@ -20,14 +21,16 @@ object FirestoreManager {
 
   fun setUserCurrentApp(
     userId: String,
-    appName: String?,
-    since: Date?,
-    onComplete: (Boolean) -> Unit
+    currentApp: AppLiveUsageInfo?,
+    onComplete: (Boolean) -> Unit,
   ) {
     updateDocument(
       Collections.USERS, userId, mapOf(
-        User::currentApp.name to appName,
-        User::currentAppSince.name to since?.let { Timestamp(it) },
+        User::currentApp.name to currentApp?.appName,
+        User::currentAppSince.name to currentApp?.usedSince?.let { Timestamp(Date(it)) },
+        User::currentPackage.name to currentApp?.packageName,
+        User::currentAppClass.name to currentApp?.className,
+        User::currentAppActivity.name to currentApp?.activityName
       ), onComplete
     )
   }
