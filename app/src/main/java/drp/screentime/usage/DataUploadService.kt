@@ -3,11 +3,13 @@ package drp.screentime.usage
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Build.VERSION_CODES
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -67,6 +69,11 @@ class DataUploadService : Service() {
    */
   private val scope = CoroutineScope(job + Dispatchers.IO)
 
+  private fun isDeviceAwake(context: Context): Boolean {
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    return powerManager.isInteractive
+  }
+
   /** Main logic of this service. */
   private suspend fun monitorAppUsage() {
     val dataStoreManager = DataStoreManager(applicationContext)
@@ -80,18 +87,30 @@ class DataUploadService : Service() {
       return
     }
 
+    var firstTime = true
+    var lastApp: AppLiveUsageInfo? = null
+
     // Every second until the time limit is reached, upload device usage in real time
     while (true) {
       Log.d(TAG, "Uploading data...")
-      val totalUsage = usageStatsProcessor.getTotalUsage()
-      val currentAppData = usageStatsProcessor.getLastAppOpen()
 
-      FirestoreManager.setUserScore(userId, totalUsage) { success ->
-        if (!success) Log.e(TAG, "Failed to upload user score.")
-      }
+      val isAwake = isDeviceAwake(applicationContext)
 
-      FirestoreManager.setUserCurrentApp(userId, currentAppData) { success ->
-        if (!success) Log.e(TAG, "Failed to upload current app.")
+      val currentAppData = if (isAwake) usageStatsProcessor.getLastAppOpen() else null
+
+      if (lastApp != currentAppData || firstTime) {
+        lastApp = currentAppData
+        firstTime = false
+
+        FirestoreManager.setUserCurrentApp(userId, currentAppData) { success ->
+          if (!success) Log.e(TAG, "Failed to upload current app.")
+        }
+
+        val totalUsage = usageStatsProcessor.getTotalUsage()
+
+        FirestoreManager.setUserScore(userId, totalUsage) { success ->
+          if (!success) Log.e(TAG, "Failed to upload user score.")
+        }
       }
 
       // Wait for a second before checking again.
