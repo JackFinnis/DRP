@@ -107,6 +107,7 @@ fun CompetitionView(user: User, competitionId: String) {
         confirmButton = {
           TextButton(
               onClick = {
+                name = name.trim()
                 showEditNameAlert.value = false
                 FirestoreManager.updateDocument(
                     Collections.USERS, user.id, mapOf(User::name.name to name)) {}
