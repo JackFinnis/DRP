@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PersonAdd
@@ -37,7 +35,7 @@ import drp.screentime.firestore.User
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompetitionView(user: User, competitionId: String) {
-  var showEditNameAlert by remember { mutableStateOf(false) }
+  val showEditNameAlert = remember { mutableStateOf(false) }
   var name by remember { mutableStateOf(user.name) }
   var competition by remember { mutableStateOf<Competition?>(null) }
   val context = LocalContext.current
@@ -45,8 +43,7 @@ fun CompetitionView(user: User, competitionId: String) {
   DisposableEffect(competitionId) {
     val listener: ListenerRegistration =
         FirestoreManager.addDocumentListener<Competition>(
-          Collections.COMPETITIONS, competitionId
-        ) { newCompetition ->
+            Collections.COMPETITIONS, competitionId) { newCompetition ->
               competition = newCompetition
             }
     onDispose { listener.remove() }
@@ -59,10 +56,12 @@ fun CompetitionView(user: User, competitionId: String) {
         topBar = { LargeTopAppBar(title = { Text("Leaderboard") }) },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        Box(modifier = Modifier.weight(1f)) { LeaderboardView(competitionId, user.id) }
+        Box(modifier = Modifier.weight(1f)) {
+          LeaderboardView(competitionId, user.id, showEditNameAlert)
+        }
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp)) {
               LargeButton(
                   modifier = Modifier.weight(1f),
                   onClick = {
@@ -82,7 +81,7 @@ fun CompetitionView(user: User, competitionId: String) {
                   tonal = false)
               LargeButton(
                   modifier = Modifier.weight(1f),
-                  onClick = { showEditNameAlert = true },
+                  onClick = { showEditNameAlert.value = true },
                   icon = Icons.Default.Edit,
                   text = "Edit name",
                   tonal = true)
@@ -91,23 +90,20 @@ fun CompetitionView(user: User, competitionId: String) {
     }
   }
 
-  if (showEditNameAlert) {
+  if (showEditNameAlert.value) {
     AlertDialog(
-        onDismissRequest = { showEditNameAlert = false },
+        onDismissRequest = { showEditNameAlert.value = false },
         confirmButton = {
           TextButton(
               onClick = {
-                showEditNameAlert = false
+                showEditNameAlert.value = false
                 FirestoreManager.updateDocument(
-                  Collections.USERS,
-                  user.id,
-                  mapOf(User::name.name to name)
-                ) {}
+                    Collections.USERS, user.id, mapOf(User::name.name to name)) {}
               }) {
                 Text("Save")
               }
         },
-        dismissButton = { TextButton(onClick = { showEditNameAlert = false }) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = { showEditNameAlert.value = false }) { Text("Cancel") } },
         title = { Text("Enter your name") },
         text = {
           TextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())

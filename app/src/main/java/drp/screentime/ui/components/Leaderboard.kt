@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,11 +40,15 @@ import com.google.firebase.functions.functions
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
-import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
 
 @Composable
-fun LeaderboardView(competitionId: String, userId: String) {
+fun LeaderboardView(
+    competitionId: String,
+    userId: String,
+    showEditNameAlert: MutableState<Boolean>
+) {
   var users by remember { mutableStateOf<List<User>>(emptyList()) }
   var loading by remember { mutableStateOf(true) }
 
@@ -57,20 +62,27 @@ fun LeaderboardView(competitionId: String, userId: String) {
   }
 
   LazyColumn(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(16.dp),
+      modifier = Modifier.fillMaxWidth().padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
         itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
-            LeaderboardEntry(place = index + 1, user = user, myUserId = userId)
+            LeaderboardEntry(
+                place = index + 1,
+                user = user,
+                myUserId = userId,
+                showEditNameAlert = showEditNameAlert)
           }
         }
       }
 }
 
 @Composable
-fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
+fun LeaderboardEntry(
+    place: Int,
+    user: User,
+    myUserId: String,
+    showEditNameAlert: MutableState<Boolean>
+) {
   val startTime = user.currentAppSince?.seconds ?: 0
 
   // number of seconds the user has been using the app
@@ -92,7 +104,12 @@ fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
 
   Card(
       colors = CardDefaults.cardColors(containerColor = fillColor),
-      shape = RoundedCornerShape(16.dp)) {
+      shape = RoundedCornerShape(16.dp),
+      onClick = {
+        if (user.id == myUserId) {
+          showEditNameAlert.value = true
+        }
+      }) {
         Row(
             modifier = Modifier.padding(20.dp, 16.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -114,26 +131,24 @@ fun LeaderboardEntry(place: Int, user: User, myUserId: String) {
                   }
                 }
               }
-          Spacer(
-            Modifier
-              .weight(1f)
-              .fillMaxHeight()
-          )
-          if (user.id != myUserId && user.currentApp != null) {
-            Button(onClick = {
-              Firebase.functions.getHttpsCallable("poke")
-                .call(mapOf("toUserID" to user.id, "fromUserID" to myUserId))
-            }, shape = RoundedCornerShape(16.dp)) {
-              Text("Poke")
+              Spacer(Modifier.weight(1f).fillMaxHeight())
+              if (user.id != myUserId && user.currentApp != null) {
+                Button(
+                    onClick = {
+                      Firebase.functions
+                          .getHttpsCallable("poke")
+                          .call(mapOf("toUserID" to user.id, "fromUserID" to myUserId))
+                    },
+                    shape = RoundedCornerShape(16.dp)) {
+                      Text("Poke")
+                    }
+                Spacer(modifier = Modifier.width(16.dp))
+              }
+              Text(
+                  text = formatDuration(user.score),
+                  style = MaterialTheme.typography.titleMedium,
+                  modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
+                  textAlign = TextAlign.Right)
             }
-            Spacer(modifier = Modifier.width(16.dp))
-          }
-          Text(
-            text = formatDuration(user.score),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
-            textAlign = TextAlign.Right
-          )
-        }
       }
 }
