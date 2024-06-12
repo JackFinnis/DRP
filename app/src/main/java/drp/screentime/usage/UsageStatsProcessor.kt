@@ -46,23 +46,36 @@ class UsageStatsProcessor(context: Context) {
             }
             .partition { it.eventType in APP_OPEN_EVENT_TYPES }
 
+    val currentActivities = openEvents
+      .filter { openEvent ->
+        // Ensure it has no later corresponding close event
+        closeEvents.none { closeEvent ->
+          closeEvent.packageName == openEvent.packageName &&
+              closeEvent.timeStamp > openEvent.timeStamp
+        }
+      }
+
+    val lastUsedActivity = currentActivities
+      .fastMaxBy { it.timeStamp } ?: return null
+
+    val appCloseEvents =
+      closeEvents.filter { event -> event.packageName == lastUsedActivity.packageName }
     val lastUsedApp =
-        openEvents
-            .filter { openEvent ->
-              // Ensure it has no later corresponding close event
-              closeEvents.none { closeEvent ->
-                closeEvent.packageName == openEvent.packageName &&
-                    closeEvent.timeStamp > openEvent.timeStamp
-              }
-            }
-            .fastMaxBy { it.timeStamp } ?: return null
+      openEvents.filter { event -> event.packageName == lastUsedActivity.packageName }
+        .filter { openEvent ->
+          appCloseEvents.none { closeEvent ->
+            openEvent.timeStamp > closeEvent.timeStamp &&
+                openEvent.timeStamp - closeEvent.timeStamp < 15 * 1000
+          }
+        }
+        .fastMaxBy { it.timeStamp } ?: return null
 
     return AppLiveUsageInfo(
-        lastUsedApp.packageName,
-        pm.getAppName(lastUsedApp.packageName),
-        lastUsedApp.className,
-        pm.getActivityName(lastUsedApp.packageName, lastUsedApp.className),
-        lastUsedApp.timeStamp,
+      lastUsedApp.packageName,
+      pm.getAppName(lastUsedApp.packageName),
+      lastUsedActivity.className,
+      pm.getActivityName(lastUsedActivity.packageName, lastUsedActivity.className),
+      lastUsedApp.timeStamp,
     )
   }
 
