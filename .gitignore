@@ -33,3 +33,6 @@ google-services.json
 *.hprof
 
 .DS_store
+
+# Ignore generated APK output directory
+app/release

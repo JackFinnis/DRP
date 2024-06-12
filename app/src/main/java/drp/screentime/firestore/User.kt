@@ -1,7 +1,9 @@
 package drp.screentime.firestore
 
+import androidx.annotation.Keep
 import com.google.firebase.Timestamp
 
+@Keep
 data class User(
     val name: String = "",
     val score: Long = 0, val fcmToken: String? = null,
