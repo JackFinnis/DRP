@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddChart
 import androidx.compose.material.icons.filled.Start
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,7 @@ import drp.screentime.util.constants
 fun NoCompetitionView(userId: String) {
   var joinCompetitionCode by remember { mutableStateOf("") }
   var showJoinCompetitionAlert by remember { mutableStateOf(false) }
+  var joinCompetitionError by remember { mutableStateOf(false) }
 
   Scaffold { contentPadding ->
     Column(modifier = Modifier.padding(contentPadding).padding(16.dp)) {
@@ -73,8 +75,17 @@ fun NoCompetitionView(userId: String) {
           confirmButton = {
             TextButton(
                 onClick = {
-                  showJoinCompetitionAlert = false
-                  FirestoreManager.joinCompetition(userId, joinCompetitionCode, onComplete = {})
+                  joinCompetitionError = false
+                  FirestoreManager.joinCompetition(
+                      userId,
+                      joinCompetitionCode,
+                      onComplete = { success ->
+                        if (success) {
+                          showJoinCompetitionAlert = false
+                        } else {
+                          joinCompetitionError = true
+                        }
+                      })
                 }) {
                   Text("Join")
                 }
@@ -88,7 +99,8 @@ fun NoCompetitionView(userId: String) {
                 value = joinCompetitionCode,
                 onValueChange = { joinCompetitionCode = it.uppercase() },
                 label = { Text("Invite code") },
-                modifier = Modifier.fillMaxWidth())
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = { if (joinCompetitionError) Text("Invalid invite code", color = MaterialTheme.colorScheme.error) })
           })
     }
   }
