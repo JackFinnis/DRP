@@ -36,6 +36,7 @@ import drp.screentime.firestore.User
 @Composable
 fun CompetitionView(user: User, competitionId: String) {
   val showEditNameAlert = remember { mutableStateOf(false) }
+  var showLeaveCompetitionAlert by remember { mutableStateOf(false) }
   var name by remember { mutableStateOf(user.name) }
   var competition by remember { mutableStateOf<Competition?>(null) }
   val context = LocalContext.current
@@ -57,12 +58,7 @@ fun CompetitionView(user: User, competitionId: String) {
         LargeTopAppBar(
           title = { Text("Leaderboard") },
           actions = {
-            IconButton(onClick = {
-              competition = null
-              FirestoreManager.updateDocument(
-                Collections.USERS, user.id, mapOf(User::competitionId.name to null)
-              ) {}
-            }) {
+            IconButton(onClick = { showLeaveCompetitionAlert = true }) {
               Icon(
                 imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = "Leave competition"
@@ -122,5 +118,29 @@ fun CompetitionView(user: User, competitionId: String) {
         text = {
           TextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth())
         })
+  }
+
+  if (showLeaveCompetitionAlert) {
+    AlertDialog(
+      title = { Text("Leave competition?") },
+      text = { Text("All your progress will be lost and you won't be able to rejoin unless invited back. Are you sure you want to leave?") },
+      onDismissRequest = { showLeaveCompetitionAlert = false },
+      confirmButton = {
+        TextButton(onClick = {
+          competition = null
+          FirestoreManager.updateDocument(
+            Collections.USERS, user.id, mapOf(User::competitionId.name to null)
+          ) {}
+          showLeaveCompetitionAlert = false
+        }) {
+          Text("Leave")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showLeaveCompetitionAlert = false
+        }) { Text("Cancel") }
+      },
+    )
   }
 }
