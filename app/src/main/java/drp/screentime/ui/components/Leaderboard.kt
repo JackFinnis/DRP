@@ -57,22 +57,36 @@ import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LeaderboardView(
-    competitionId: String,
-    userId: String,
-    showEditNameAlert: MutableState<Boolean>
+  competitionId: String,
+  userId: String,
+  showEditNameAlert: MutableState<Boolean>,
+  shownDay: Date,
+  isToday: Boolean
 ) {
-  var users by remember { mutableStateOf<List<User>>(emptyList()) }
+  var users by remember { mutableStateOf<List<Pair<Long, User>>>(emptyList()) }
   var loading by remember { mutableStateOf(true) }
+  var dataIsToday by remember { mutableStateOf(isToday) }
 
-  DisposableEffect(competitionId) {
+  DisposableEffect(competitionId, shownDay) {
     val listener =
         FirestoreManager.addLeaderboardListener(competitionId) { newUsers ->
-          users = newUsers.sortedBy { it.score }
+          users = newUsers.mapNotNull {
+            val score = if (isToday) it.score else (it.previousScores[SimpleDateFormat(
+              "yyyy-MM-dd",
+              Locale.US
+            ).format(shownDay)])
+
+            if (score != null) Pair(score, it) else null
+          }.sortedBy { pair -> pair.first }
           loading = false
+          dataIsToday = isToday
         }
     onDispose { listener.remove() }
   }
@@ -82,13 +96,16 @@ fun LeaderboardView(
       .fillMaxWidth()
       .padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        itemsIndexed(users, key = { _, user -> user.id }) { index, user ->
+        itemsIndexed(users, key = { _, user -> user.second.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
             LeaderboardEntry(
-                place = index + 1,
-                user = user,
-                myUserId = userId,
-                showEditNameAlert = showEditNameAlert)
+              place = index + 1,
+              user = user.second,
+              score = user.first,
+              isToday = dataIsToday,
+              myUserId = userId,
+              showEditNameAlert = showEditNameAlert,
+            )
           }
         }
       }
@@ -96,10 +113,12 @@ fun LeaderboardView(
 
 @Composable
 fun LeaderboardEntry(
-    place: Int,
-    user: User,
-    myUserId: String,
-    showEditNameAlert: MutableState<Boolean>
+  place: Int,
+  user: User,
+  score: Long,
+  isToday: Boolean,
+  myUserId: String,
+  showEditNameAlert: MutableState<Boolean>,
 ) {
   val startTime = user.currentAppSince?.seconds ?: 0
 
@@ -107,7 +126,7 @@ fun LeaderboardEntry(
   var time by remember { mutableLongStateOf(0L) }
   var pokeMessage by remember { mutableStateOf("") }
   var showPokeAlert by remember { mutableStateOf(false) }
-  val pokable = myUserId != user.id && user.currentApp != null
+  val pokable = isToday && myUserId != user.id && user.currentApp != null
 
   LaunchedEffect(startTime) {
     while (true) { // isActive is true as long as the coroutine is active
@@ -183,7 +202,7 @@ fun LeaderboardEntry(
             .fillMaxWidth(),
         )
         Text(
-          text = formatDuration(user.score),
+          text = formatDuration(score),
           style = typography.titleMedium,
           modifier = Modifier.defaultMinSize(48.dp, Dp.Unspecified),
           textAlign = TextAlign.Right
