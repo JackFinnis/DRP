@@ -143,7 +143,7 @@ fun LeaderboardEntry(
       ) {
         Column(
           verticalArrangement = Arrangement.Center,
-          modifier = Modifier.padding(end = 12.dp),
+          modifier = Modifier.padding(end = 16.dp),
         ) {
           Surface(
             shape = CircleShape,
@@ -156,7 +156,7 @@ fun LeaderboardEntry(
             modifier = Modifier
               .width(32.dp)
               .height(32.dp),
-            shadowElevation = if (place <= 3) 2.dp else 0.dp,
+            shadowElevation = if (place <= 3) 1.dp else 0.dp,
           ) {
             Text(
               text = place.toString(),
@@ -169,7 +169,6 @@ fun LeaderboardEntry(
               },
               textAlign = TextAlign.Center,
               modifier = Modifier
-                .padding(4.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
             )
           }
