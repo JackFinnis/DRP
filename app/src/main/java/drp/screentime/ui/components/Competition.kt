@@ -139,7 +139,7 @@ fun CompetitionView(user: User, competitionId: String) {
             )
           }
           Text(
-            SimpleDateFormat("EEEE d MMMM yyyy", Locale.US).format(shownDay),
+            if (isToday) "Today" else SimpleDateFormat("EEEE d MMMM yyyy", Locale.US).format(shownDay),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.width(256.dp),
             textAlign = TextAlign.Center
