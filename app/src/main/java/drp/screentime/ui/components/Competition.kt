@@ -77,42 +77,40 @@ fun CompetitionView(user: User, competitionId: String) {
     LoadingView()
   } else {
     Scaffold(
-      topBar = {
-        LargeTopAppBar(
-          title = { Text("Leaderboard") },
-          actions = {
-            IconButton(onClick = { showLeaveCompetitionAlert = true }) {
-              Icon(
-                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                contentDescription = "Leave competition"
-              )
-            }
-          },
-        )
-      },
-      floatingActionButton = {
-        ExtendedFloatingActionButton(
-          onClick = {
-            val sendIntent: Intent =
-              Intent().apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
-                putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
-                putExtra(Intent.EXTRA_TITLE, "Competition invite code")
-              }
-            val shareIntent = Intent.createChooser(sendIntent, null)
-            context.startActivity(shareIntent)
-          },
-        ) {
-          Icon(
-            imageVector = Icons.Default.PersonAdd,
-            contentDescription = "Invite friends",
-            modifier = Modifier.padding(end = 12.dp)
+        topBar = {
+          LargeTopAppBar(
+              title = { Text("Leaderboard") },
+              actions = {
+                IconButton(onClick = { showLeaveCompetitionAlert = true }) {
+                  Icon(
+                      imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                      contentDescription = "Leave competition")
+                }
+              },
           )
-          Text("Invite friends")
-        }
-      },
+        },
+        floatingActionButton = {
+          ExtendedFloatingActionButton(
+              onClick = {
+                val sendIntent: Intent =
+                    Intent().apply {
+                      action = Intent.ACTION_SEND
+                      type = "text/plain"
+                      putExtra(Intent.EXTRA_TEXT, competition!!.inviteCode)
+                      putExtra(Intent.EXTRA_SUBJECT, "Join my screen time competition!")
+                      putExtra(Intent.EXTRA_TITLE, "Competition invite code")
+                    }
+                val shareIntent = Intent.createChooser(sendIntent, null)
+                context.startActivity(shareIntent)
+              },
+          ) {
+            Icon(
+                imageVector = Icons.Default.PersonAdd,
+                contentDescription = "Invite friends",
+                modifier = Modifier.padding(end = 12.dp))
+            Text("Invite friends")
+          }
+        },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
         Row(
@@ -163,7 +161,7 @@ fun CompetitionView(user: User, competitionId: String) {
             )
           }
         }
-        LeaderboardView(competitionId, user.id, showEditNameDialog, shownDay, isToday)
+        LeaderboardView(competition!!, user.id, showEditNameDialog, shownDay, isToday)
       }
     }
   }
@@ -193,25 +191,26 @@ fun CompetitionView(user: User, competitionId: String) {
 
   if (showLeaveCompetitionAlert) {
     AlertDialog(
-      title = { Text("Leave competition?") },
-      text = { Text("All your progress will be lost and you won't be able to rejoin unless invited back. Are you sure you want to leave?") },
-      onDismissRequest = { showLeaveCompetitionAlert = false },
-      confirmButton = {
-        TextButton(onClick = {
-          competition = null
-          FirestoreManager.updateDocument(
-            Collections.USERS, user.id, mapOf(User::competitionId.name to null)
-          ) {}
-          showLeaveCompetitionAlert = false
-        }) {
-          Text("Leave")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = {
-          showLeaveCompetitionAlert = false
-        }) { Text("Cancel") }
-      },
+        title = { Text("Leave competition?") },
+        text = {
+          Text(
+              "All your progress will be lost and you won't be able to rejoin unless invited back. Are you sure you want to leave?")
+        },
+        onDismissRequest = { showLeaveCompetitionAlert = false },
+        confirmButton = {
+          TextButton(
+              onClick = {
+                competition = null
+                FirestoreManager.updateDocument(
+                    Collections.USERS, user.id, mapOf(User::competitionId.name to null)) {}
+                showLeaveCompetitionAlert = false
+              }) {
+                Text("Leave", color = MaterialTheme.colorScheme.error)
+              }
+        },
+        dismissButton = {
+          TextButton(onClick = { showLeaveCompetitionAlert = false }) { Text("Cancel") }
+        },
     )
   }
 }

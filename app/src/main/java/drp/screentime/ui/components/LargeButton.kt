@@ -17,21 +17,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LargeButton(
-    modifier: Modifier,
-    onClick: () -> Unit,
-    icon: ImageVector,
-    text: String
-) {
+fun LargeButton(modifier: Modifier, onClick: () -> Unit, icon: ImageVector, text: String) {
   Button(
-    contentPadding = PaddingValues(16.dp),
-    shape = RoundedCornerShape(16.dp),
-    modifier = modifier,
-    onClick = onClick) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-      Spacer(Modifier.height(8.dp))
-      Text(text, style = MaterialTheme.typography.labelLarge)
-    }
-  }
+      contentPadding = PaddingValues(16.dp),
+      shape = RoundedCornerShape(16.dp),
+      modifier = modifier,
+      onClick = onClick) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+          Spacer(Modifier.height(8.dp))
+          Text(text, style = MaterialTheme.typography.labelLarge)
+        }
+      }
 }

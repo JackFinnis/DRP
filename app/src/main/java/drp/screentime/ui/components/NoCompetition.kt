@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,9 +46,7 @@ fun NoCompetitionView(userId: String) {
   var showNewCompetitionView by remember { mutableStateOf(false) }
 
   Scaffold { contentPadding ->
-    Column(modifier = Modifier
-      .padding(contentPadding)
-      .padding(16.dp)) {
+    Column(modifier = Modifier.padding(contentPadding).padding(16.dp)) {
       Box(modifier = Modifier.weight(1f)) {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -64,9 +63,7 @@ fun NoCompetitionView(userId: String) {
       Row {
         LargeButton(
             modifier = Modifier.weight(1f),
-            onClick = {
-              showNewCompetitionView = true
-            },
+            onClick = { showNewCompetitionView = true },
             icon = Icons.Default.AddChart,
             text = "Start competition")
         Spacer(Modifier.width(16.dp))
@@ -80,55 +77,59 @@ fun NoCompetitionView(userId: String) {
     if (showJoinCompetitionAlert) {
       var joinCompetitionCode by remember { mutableStateOf("") }
       var joinCompetitionError by remember { mutableStateOf(false) }
+      val context = LocalContext.current
 
       AlertDialog(
-        onDismissRequest = { showJoinCompetitionAlert = false },
-        confirmButton = {
-          TextButton(
-            onClick = {
-              joinCompetitionCode = joinCompetitionCode.uppercase().trim()
-              joinCompetitionError = false
-              FirestoreManager.joinCompetition(userId,
-                joinCompetitionCode,
-                onComplete = { success ->
-                  if (success) {
-                    showJoinCompetitionAlert = false
-                  } else {
-                    joinCompetitionError = true
-                  }
-                })
-            },
-            colors = ButtonDefaults.buttonColors(),
-          ) {
-            Text("Join")
-          }
-        },
-        dismissButton = {
-          TextButton(onClick = { showJoinCompetitionAlert = false }) { Text("Cancel") }
-        },
-        title = { Text("Enter invite code") },
-        text = {
-          TextField(
-            value = joinCompetitionCode,
-            onValueChange = { joinCompetitionCode = it.uppercase() },
-            label = { Text("Invite code") },
-            supportingText = { if (joinCompetitionError) Text("Invalid invite code") },
-            isError = joinCompetitionError,
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 1,
-            keyboardOptions = KeyboardOptions.Default.copy(
-              capitalization = KeyboardCapitalization.Characters,
-              autoCorrectEnabled = false,
-              keyboardType = KeyboardType.Password,
-              imeAction = ImeAction.Done,
-            ),
-          )
-        },
+          onDismissRequest = { showJoinCompetitionAlert = false },
+          confirmButton = {
+            TextButton(
+                onClick = {
+                  joinCompetitionCode = joinCompetitionCode.uppercase().trim()
+                  joinCompetitionError = false
+                  FirestoreManager.joinCompetition(
+                      userId,
+                      joinCompetitionCode,
+                      context,
+                      onComplete = { success ->
+                        if (success) {
+                          showJoinCompetitionAlert = false
+                        } else {
+                          joinCompetitionError = true
+                        }
+                      })
+                },
+                colors = ButtonDefaults.buttonColors(),
+            ) {
+              Text("Join")
+            }
+          },
+          dismissButton = {
+            TextButton(onClick = { showJoinCompetitionAlert = false }) { Text("Cancel") }
+          },
+          title = { Text("Enter invite code") },
+          text = {
+            TextField(
+                value = joinCompetitionCode,
+                onValueChange = { joinCompetitionCode = it.uppercase() },
+                label = { Text("Invite code") },
+                supportingText = { if (joinCompetitionError) Text("Invalid invite code") },
+                isError = joinCompetitionError,
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 1,
+                keyboardOptions =
+                    KeyboardOptions.Default.copy(
+                        capitalization = KeyboardCapitalization.Characters,
+                        autoCorrectEnabled = false,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+            )
+          },
       )
     }
     if (showNewCompetitionView) {
       ModalBottomSheet(onDismissRequest = { showNewCompetitionView = false }) {
-        NewCompetitionView()
+        NewCompetitionView(userId, onDismiss = { showNewCompetitionView = false })
       }
     }
   }

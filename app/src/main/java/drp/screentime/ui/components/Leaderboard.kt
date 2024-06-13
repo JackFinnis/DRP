@@ -53,6 +53,8 @@ import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.functions
+import drp.screentime.firestore.App
+import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
@@ -64,19 +66,19 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LeaderboardView(
-  competitionId: String,
-  userId: String,
-  showEditNameAlert: MutableState<Boolean>,
-  shownDay: Date,
-  isToday: Boolean
+    competition: Competition,
+    userId: String,
+    showEditNameAlert: MutableState<Boolean>,
+    shownDay: Date,
+    isToday: Boolean
 ) {
   var users by remember { mutableStateOf<List<Pair<Long, User>>>(emptyList()) }
   var loading by remember { mutableStateOf(true) }
   var dataIsToday by remember { mutableStateOf(isToday) }
 
-  DisposableEffect(competitionId, shownDay) {
+  DisposableEffect(competition.id, shownDay) {
     val listener =
-        FirestoreManager.addLeaderboardListener(competitionId) { newUsers ->
+        FirestoreManager.addLeaderboardListener(competition.id) { newUsers ->
           users = newUsers.mapNotNull {
             val score = if (isToday) it.score else (it.previousScores[SimpleDateFormat(
               "yyyy-MM-dd",
@@ -92,10 +94,15 @@ fun LeaderboardView(
   }
 
   LazyColumn(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(16.dp),
+      modifier = Modifier.fillMaxWidth().padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (competition.apps.isNotEmpty()) {
+          item {
+            Text(
+              "Time using ${competition.apps.map(App::displayName).joinToString(", ")}",
+              textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth())
+          }
+        }
         itemsIndexed(users, key = { _, user -> user.second.id }) { index, user ->
           Box(modifier = Modifier.animateItem()) {
             LeaderboardEntry(
@@ -136,30 +143,30 @@ fun LeaderboardEntry(
     }
   }
 
-  val fillColor: Color = when (user.id) {
-    myUserId -> colorScheme.primary
-    else -> colorScheme.secondaryContainer
-  }
-  val textColor: Color = when (user.id) {
-    myUserId -> colorScheme.onPrimary
-    else -> colorScheme.onSecondaryContainer
-  }
+  val fillColor: Color =
+      when (user.id) {
+        myUserId -> colorScheme.primary
+        else -> colorScheme.secondaryContainer
+      }
+  val textColor: Color =
+      when (user.id) {
+        myUserId -> colorScheme.onPrimary
+        else -> colorScheme.onSecondaryContainer
+      }
 
   Card(
-    colors = CardDefaults.cardColors(containerColor = fillColor),
-    onClick = {
-      if (user.id == myUserId) {
-        showEditNameAlert.value = true
-      }
-    },
+      colors = CardDefaults.cardColors(containerColor = fillColor),
+      onClick = {
+        if (user.id == myUserId) {
+          showEditNameAlert.value = true
+        }
+      },
   ) {
     Column(
-      modifier = Modifier.padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         Column(
           verticalArrangement = Arrangement.Center,
           modifier = Modifier.padding(end = 16.dp),
@@ -193,13 +200,11 @@ fun LeaderboardEntry(
           }
         }
         Text(
-          text = user.name,
-          style = typography.titleMedium,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth(),
+            text = user.name,
+            style = typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
         )
         Text(
           text = formatDuration(score),
@@ -211,20 +216,19 @@ fun LeaderboardEntry(
       if (pokable) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Text(
-            text = buildAnnotatedString {
-              append("Using ")
-              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                append(user.currentApp!!)
-              }
-              append(" for ")
-              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                append(formatDuration(time))
-              }
-            },
-            style = typography.bodyMedium,
-            modifier = Modifier
-              .weight(1f)
-              .fillMaxWidth(),
+              text =
+                  buildAnnotatedString {
+                    append("Using ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                      append(user.currentApp!!)
+                    }
+                    append(" for ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                      append(formatDuration(time))
+                    }
+                  },
+              style = typography.bodyMedium,
+              modifier = Modifier.weight(1f).fillMaxWidth(),
           )
           Button(onClick = { showPokeAlert = true }) { Text("Poke") }
         }
@@ -234,86 +238,86 @@ fun LeaderboardEntry(
 
   if (showPokeAlert) {
     AlertDialog(
-      confirmButton = {
-        TextButton(
-          colors = ButtonDefaults.buttonColors(),
-          enabled = pokable,
-          onClick = {
-            Firebase.functions.getHttpsCallable("poke").call(
-              mapOf(
-                "toUserID" to user.id,
-                "fromUserID" to myUserId,
-                "message" to pokeMessage,
-              )
-            ).addOnFailureListener {
-              Log.e("Leaderboard", "Failed to poke user", it)
-              showPokeAlert = false
-            }
-            // TODO: remove once logging finished=
-            FirebaseFirestore.getInstance().collection("config")
-              .document("logging").get()
-              .addOnSuccessListener { data ->
-                if (data.getBoolean("pokes")!!) {
-                  val ref = FirebaseFirestore.getInstance().collection("pokeCalls").document()
-                  ref.set(mapOf(
-                    "fromID" to myUserId,
-                    "toID" to user.id,
-                    "timestamp" to Timestamp.now()
-                  ))
-                }
-              }
+        confirmButton = {
+          TextButton(
+              colors = ButtonDefaults.buttonColors(),
+              enabled = pokable,
+              onClick = {
+                Firebase.functions
+                    .getHttpsCallable("poke")
+                    .call(
+                        mapOf(
+                            "toUserID" to user.id,
+                            "fromUserID" to myUserId,
+                            "message" to pokeMessage,
+                        ))
+                    .addOnFailureListener {
+                      Log.e("Leaderboard", "Failed to poke user", it)
+                      showPokeAlert = false
+                    }
+                // TODO: remove once logging finished=
+                FirebaseFirestore.getInstance()
+                    .collection("config")
+                    .document("logging")
+                    .get()
+                    .addOnSuccessListener { data ->
+                      if (data.getBoolean("pokes")!!) {
+                        val ref = FirebaseFirestore.getInstance().collection("pokeCalls").document()
+                        ref.set(
+                            mapOf(
+                                "fromID" to myUserId,
+                                "toID" to user.id,
+                                "timestamp" to Timestamp.now()))
+                      }
+                    }
 
-            pokeMessage = ""
-            showPokeAlert = false
-          },
-        ) {
-          Text("Poke")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { showPokeAlert = false }) { Text("Cancel") }
-      },
-      onDismissRequest = { showPokeAlert = false },
-      icon = {
-        Icon(
-          imageVector = Icons.Default.TouchApp,
-          contentDescription = "Poke",
-        )
-      },
-      title = { Text("Poke user?") },
-      text = {
-        Column {
-          Text(buildAnnotatedString {
-            append("Send ")
-            withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-              append(user.name)
-            }
-            append(" a reminder to take a break from ")
-            if (user.currentApp == null) {
-              append("their device")
-            } else {
-              withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                append(user.currentApp)
-              }
-            }
-            append("?")
-          })
-          Spacer(Modifier.height(16.dp))
-          TextField(value = pokeMessage,
-            onValueChange = { pokeMessage = it },
-            label = { Text("Add message (optional)") },
-            modifier = Modifier.fillMaxWidth()
-          )
-          if (!pokable) {
-            Spacer(Modifier.height(16.dp))
-            Text(
-              "${user.name} is no longer using an app and cannot be poked.",
-              style = typography.bodySmall,
-              color = colorScheme.error
-            )
+                pokeMessage = ""
+                showPokeAlert = false
+              },
+          ) {
+            Text("Poke")
           }
-        }
-      },
+        },
+        dismissButton = { TextButton(onClick = { showPokeAlert = false }) { Text("Cancel") } },
+        onDismissRequest = { showPokeAlert = false },
+        icon = {
+          Icon(
+              imageVector = Icons.Default.TouchApp,
+              contentDescription = "Poke",
+          )
+        },
+        title = { Text("Poke ${user.name}?") },
+        text = {
+          Column {
+            Text(
+                buildAnnotatedString {
+                  append("Send ")
+                  withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) { append(user.name) }
+                  append(" a reminder to take a break from ")
+                  if (user.currentApp == null) {
+                    append("their device")
+                  } else {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
+                      append(user.currentApp)
+                    }
+                  }
+                  append("?")
+                })
+            Spacer(Modifier.height(16.dp))
+            TextField(
+                value = pokeMessage,
+                onValueChange = { pokeMessage = it },
+                label = { Text("Add message (optional)") },
+                modifier = Modifier.fillMaxWidth())
+            if (!pokable) {
+              Spacer(Modifier.height(16.dp))
+              Text(
+                  "${user.name} is no longer using an app and cannot be poked.",
+                  style = typography.bodySmall,
+                  color = colorScheme.error)
+            }
+          }
+        },
     )
   }
 }

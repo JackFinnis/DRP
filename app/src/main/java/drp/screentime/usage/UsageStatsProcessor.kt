@@ -11,6 +11,8 @@ import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 import android.os.Process
 import androidx.compose.ui.util.fastMaxBy
+import drp.screentime.firestore.App
+import drp.screentime.storage.StorageManager
 import drp.screentime.util.addDays
 import drp.screentime.util.getActivityName
 import drp.screentime.util.getAppName
@@ -21,6 +23,7 @@ import java.util.Date
 
 class UsageStatsProcessor(context: Context) {
 
+  private val storage = StorageManager(context)
   private val pm: PackageManager = context.packageManager
   private val usageStatsManager: UsageStatsManager =
       context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -29,9 +32,14 @@ class UsageStatsProcessor(context: Context) {
 
   /** Get the total usage for the given day in seconds. */
   fun getTotalUsage(day: Date = Date()): Long {
-    return getUsageStats(day)
-        .filterNot { it.totalUsageMillis <= 0 || isMundane(it.packageName) }
-        .sumOf { it.totalUsageMillis } / 1000
+    var usageStats =
+        getUsageStats(day).filter { it.totalUsageMillis > 0 && !isMundane(it.packageName) }
+    val appIds = storage.preferences.getStringSet(StorageManager.Key.APPS.name, emptySet())
+    if (!appIds.isNullOrEmpty()) {
+      val apps = appIds.map(App::valueOf).map(App::packageName).toSet()
+      usageStats = usageStats.filter { it.packageName in apps }
+    }
+    return usageStats.sumOf { it.totalUsageMillis } / 1000
   }
 
   /** Get the currently open app, and the time it was opened. */
@@ -46,24 +54,23 @@ class UsageStatsProcessor(context: Context) {
             }
             .partition { it.eventType in APP_OPEN_EVENT_TYPES }
 
-    val currentActivities = openEvents
-      .filter { openEvent ->
-        // Ensure it has no later corresponding close event
-        closeEvents.none { closeEvent ->
-          closeEvent.packageName == openEvent.packageName &&
-              closeEvent.timeStamp > openEvent.timeStamp
+    val currentActivities =
+        openEvents.filter { openEvent ->
+          // Ensure it has no later corresponding close event
+          closeEvents.none { closeEvent ->
+            closeEvent.packageName == openEvent.packageName &&
+                closeEvent.timeStamp > openEvent.timeStamp
+          }
         }
-      }
 
-    val lastUsedActivity = currentActivities
-      .fastMaxBy { it.timeStamp } ?: return null
+    val lastUsedActivity = currentActivities.fastMaxBy { it.timeStamp } ?: return null
 
     return AppLiveUsageInfo(
-      lastUsedActivity.packageName,
-      pm.getAppName(lastUsedActivity.packageName),
-      lastUsedActivity.className,
-      lastUsedActivity.className?.let { pm.getActivityName(lastUsedActivity.packageName, it) },
-      lastUsedActivity.timeStamp,
+        lastUsedActivity.packageName,
+        pm.getAppName(lastUsedActivity.packageName),
+        lastUsedActivity.className,
+        lastUsedActivity.className?.let { pm.getActivityName(lastUsedActivity.packageName, it) },
+        lastUsedActivity.timeStamp,
     )
   }
 

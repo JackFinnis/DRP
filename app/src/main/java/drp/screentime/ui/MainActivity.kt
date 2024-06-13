@@ -17,7 +17,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.compose.AppTheme
 import drp.screentime.App
-import drp.screentime.firestore.db
+import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.LoadingView
 import drp.screentime.ui.components.PermissionsView
@@ -64,7 +64,7 @@ fun RootView() {
   LaunchedEffect(Unit) {
     dataStoreManager.get(DataStoreManager.Key.USER_ID).collect { storedUserId ->
       if (storedUserId == null) {
-        dataStoreManager.set(DataStoreManager.Key.USER_ID, db.collection("users").document().id)
+        dataStoreManager.set(DataStoreManager.Key.USER_ID, FirestoreManager.getId())
       } else {
         userId = storedUserId
       }

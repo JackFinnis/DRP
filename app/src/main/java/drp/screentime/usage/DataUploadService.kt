@@ -103,53 +103,52 @@ class DataUploadService : Service() {
 
       if (lastApp != currentAppData || firstTime) {
         lastApp =
-          if (lastApp != null && lastApp.packageName == currentAppData?.packageName) {
-            // if app is same, but activity is different
-            currentAppData.copy(usedSince = lastApp.usedSince)
-          } else {
-            // if app changed, or app closed, or app opened
+            if (lastApp != null && lastApp.packageName == currentAppData?.packageName) {
+              // if app is same, but activity is different
+              currentAppData.copy(usedSince = lastApp.usedSince)
+            } else {
+              // if app changed, or app closed, or app opened
 
-            if (lastApp != null) {
-              // if app changed or closed, update its close time
-              lastTimePerApp[lastApp.packageName] =
-                Pair(lastApp.usedSince, System.currentTimeMillis())
+              if (lastApp != null) {
+                // if app changed or closed, update its close time
+                lastTimePerApp[lastApp.packageName] =
+                    Pair(lastApp.usedSince, System.currentTimeMillis())
 
-              // TODO: remove once logging finished
-              val lA = lastApp
-              FirebaseFirestore.getInstance().collection("config")
-                .document("logging").get()
-                .addOnSuccessListener { data ->
-                  if (data.getBoolean("leaves")!!) {
-                    val ref = FirebaseFirestore.getInstance().collection("appLeaves").document()
-                    ref.set(
-                      mapOf(
-                        "packageName" to lA.packageName,
-                        "userID" to userId,
-                        "timestamp" to Timestamp.now()
-                      )
-                    )
+                // TODO: remove once logging finished
+                val lA = lastApp
+                FirebaseFirestore.getInstance()
+                    .collection("config")
+                    .document("logging")
+                    .get()
+                    .addOnSuccessListener { data ->
+                      if (data.getBoolean("leaves")!!) {
+                        val ref = FirebaseFirestore.getInstance().collection("appLeaves").document()
+                        ref.set(
+                            mapOf(
+                                "packageName" to lA.packageName,
+                                "userID" to userId,
+                                "timestamp" to Timestamp.now()))
+                      }
+                    }
+              }
+
+              var currentData = currentAppData
+
+              if (currentAppData != null) {
+                // if user is currently in an app
+
+                val lastTimes = lastTimePerApp[currentAppData.packageName]
+                if (lastTimes != null) {
+                  val (lastStartTime, lastCloseTime) = lastTimes
+                  if (currentAppData.usedSince - lastCloseTime < 15 * 1000) {
+                    // if user was in same app within last few seconds
+                    currentData = currentAppData.copy(usedSince = lastStartTime)
                   }
                 }
-
-            }
-
-            var currentData = currentAppData
-
-            if (currentAppData != null) {
-              // if user is currently in an app
-
-              val lastTimes = lastTimePerApp[currentAppData.packageName]
-              if (lastTimes != null) {
-                val (lastStartTime, lastCloseTime) = lastTimes
-                if (currentAppData.usedSince - lastCloseTime < 15 * 1000) {
-                  // if user was in same app within last few seconds
-                  currentData = currentAppData.copy(usedSince = lastStartTime)
-                }
               }
-            }
 
-            currentData
-          }
+              currentData
+            }
 
         firstTime = false
 
