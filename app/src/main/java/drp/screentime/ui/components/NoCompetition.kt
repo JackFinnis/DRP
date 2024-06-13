@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.AddChart
 import androidx.compose.material.icons.filled.Start
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,12 +38,11 @@ import androidx.compose.ui.unit.sp
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.util.constants
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoCompetitionView(userId: String) {
-  var joinCompetitionCode by remember { mutableStateOf("") }
   var showJoinCompetitionAlert by remember { mutableStateOf(false) }
-  var joinCompetitionError by remember { mutableStateOf(false) }
-  var loading by remember { mutableStateOf(false) }
+  var showNewCompetitionView by remember { mutableStateOf(false) }
 
   Scaffold { contentPadding ->
     Column(modifier = Modifier
@@ -64,22 +65,22 @@ fun NoCompetitionView(userId: String) {
         LargeButton(
             modifier = Modifier.weight(1f),
             onClick = {
-              loading = true
-              FirestoreManager.addAndJoinCompetition(userId, onComplete = { loading = false })
+              showNewCompetitionView = true
             },
             icon = Icons.Default.AddChart,
-            text = "Start competition",
-            tonal = false)
+            text = "Start competition")
         Spacer(Modifier.width(16.dp))
         LargeButton(
             modifier = Modifier.weight(1f),
             onClick = { showJoinCompetitionAlert = true },
             icon = Icons.Default.Start,
-            text = "Join competition",
-            tonal = false)
+            text = "Join competition")
       }
     }
     if (showJoinCompetitionAlert) {
+      var joinCompetitionCode by remember { mutableStateOf("") }
+      var joinCompetitionError by remember { mutableStateOf(false) }
+
       AlertDialog(
         onDismissRequest = { showJoinCompetitionAlert = false },
         confirmButton = {
@@ -109,7 +110,7 @@ fun NoCompetitionView(userId: String) {
         text = {
           TextField(
             value = joinCompetitionCode,
-            onValueChange = { joinCompetitionCode = it },
+            onValueChange = { joinCompetitionCode = it.uppercase() },
             label = { Text("Invite code") },
             supportingText = { if (joinCompetitionError) Text("Invalid invite code") },
             isError = joinCompetitionError,
@@ -124,6 +125,11 @@ fun NoCompetitionView(userId: String) {
           )
         },
       )
+    }
+    if (showNewCompetitionView) {
+      ModalBottomSheet(onDismissRequest = { showNewCompetitionView = false }) {
+        NewCompetitionView()
+      }
     }
   }
 }

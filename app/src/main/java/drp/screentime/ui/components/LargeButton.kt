@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,30 +21,17 @@ fun LargeButton(
     modifier: Modifier,
     onClick: () -> Unit,
     icon: ImageVector,
-    text: String,
-    tonal: Boolean
+    text: String
 ) {
-  if (tonal) {
-    FilledTonalButton(
-        contentPadding = PaddingValues(16.dp),
-        modifier = modifier,
-        onClick = onClick) {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge)
-          }
-        }
-  } else {
-    Button(
-        contentPadding = PaddingValues(16.dp),
-        modifier = modifier,
-        onClick = onClick) {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge)
-          }
-        }
+  Button(
+    contentPadding = PaddingValues(16.dp),
+    shape = RoundedCornerShape(16.dp),
+    modifier = modifier,
+    onClick = onClick) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Icon(icon, contentDescription = text, modifier = Modifier.size(36.dp))
+      Spacer(Modifier.height(8.dp))
+      Text(text, style = MaterialTheme.typography.labelLarge)
+    }
   }
 }

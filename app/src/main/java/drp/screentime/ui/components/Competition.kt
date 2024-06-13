@@ -35,7 +35,7 @@ import drp.screentime.firestore.User
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompetitionView(user: User, competitionId: String) {
-  val showEditNameAlert = remember { mutableStateOf(false) }
+  val showEditNameDialog = remember { mutableStateOf(false) }
   var showLeaveCompetitionAlert by remember { mutableStateOf(false) }
   var name by remember { mutableStateOf(user.name) }
   var competition by remember { mutableStateOf<Competition?>(null) }
@@ -92,19 +92,19 @@ fun CompetitionView(user: User, competitionId: String) {
       },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        LeaderboardView(competitionId, user.id, showEditNameAlert)
+        LeaderboardView(competitionId, user.id, showEditNameDialog)
       }
     }
   }
 
-  if (showEditNameAlert.value) {
+  if (showEditNameDialog.value) {
     AlertDialog(
-        onDismissRequest = { showEditNameAlert.value = false },
+        onDismissRequest = { showEditNameDialog.value = false },
         confirmButton = {
           TextButton(
               onClick = {
                 name = name.trim()
-                showEditNameAlert.value = false
+                showEditNameDialog.value = false
                 FirestoreManager.updateDocument(
                     Collections.USERS, user.id, mapOf(User::name.name to name)) {}
               }) {
@@ -112,7 +112,7 @@ fun CompetitionView(user: User, competitionId: String) {
               }
         },
         dismissButton = {
-          TextButton(onClick = { showEditNameAlert.value = false }) { Text("Cancel") }
+          TextButton(onClick = { showEditNameDialog.value = false }) { Text("Cancel") }
         },
         title = { Text("Enter your name") },
         text = {
