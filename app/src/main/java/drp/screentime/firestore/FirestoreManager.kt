@@ -6,7 +6,9 @@ import com.google.firebase.firestore.ListenerRegistration
 import drp.screentime.firestore.Document.Companion.FIELD_LAST_UPDATED
 import drp.screentime.usage.AppLiveUsageInfo
 import drp.screentime.util.generateInviteCode
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 val db = FirebaseFirestore.getInstance()
 
@@ -16,6 +18,18 @@ object FirestoreManager {
   )
 
   fun setUserScore(userId: String, newScore: Long, onComplete: (Boolean) -> Unit) {
+    updateDocument(
+      Collections.USERS,
+      userId,
+      mapOf(
+        ("${User::previousScores.name}.${
+          SimpleDateFormat("yyyy-MM-dd", Locale.US).format(
+            Timestamp.now().toDate()
+          )
+        }") to newScore
+      ),
+      onComplete
+    )
     updateDocument(Collections.USERS, userId, mapOf(User::score.name to newScore), onComplete)
   }
 
