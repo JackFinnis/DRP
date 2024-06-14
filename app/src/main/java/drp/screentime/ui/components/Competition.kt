@@ -55,12 +55,10 @@ fun CompetitionView(user: User, competitionId: String) {
   var showLeaveCompetitionAlert by remember { mutableStateOf(false) }
   var name by remember { mutableStateOf(user.name) }
   var competition by remember { mutableStateOf<Competition?>(null) }
-  var shownDay by remember {
-    mutableStateOf(Date())
-  }
+  var shownDay by remember { mutableStateOf(Date()) }
 
   val fmt = SimpleDateFormat("yyyyMMdd", Locale.US)
-  val isToday = fmt.format(shownDay).equals(fmt.format(Date()));
+  val isToday = fmt.format(shownDay).equals(fmt.format(Date()))
 
   val context = LocalContext.current
 
@@ -113,54 +111,61 @@ fun CompetitionView(user: User, competitionId: String) {
         },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        Row(
-          horizontalArrangement = Arrangement.Center,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(0.dp, 16.dp, 0.dp, 8.dp)
-        ) {
-          Button(
-            onClick = {
-              val calendar = Calendar.getInstance()
-              calendar.time = shownDay
-              calendar.add(Calendar.DAY_OF_MONTH, -1)
-              shownDay = calendar.time
-            },
-            shape = CircleShape,
-            modifier = Modifier.size(36.dp),
-            contentPadding = PaddingValues(0.dp),  //avoid the little icon
-          ) {
-            Icon(
-              imageVector = Icons.Default.ArrowBackIosNew,
-              contentDescription = "Previous Day",
-            )
-          }
-          Text(
-            if (isToday) "Today" else SimpleDateFormat("EEEE d MMMM yyyy", Locale.US).format(shownDay),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.width(256.dp),
-            textAlign = TextAlign.Center
-          )
-
-          Button(
-            enabled = !isToday,
-            onClick = {
-              val calendar = Calendar.getInstance()
-              calendar.time = shownDay
-              calendar.add(Calendar.DAY_OF_MONTH, 1)
-              shownDay = calendar.time
-            },
-            shape = CircleShape,
-            modifier = Modifier.size(36.dp),
-            contentPadding = PaddingValues(0.dp),  //avoid the little icon
-          ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-              contentDescription = "Next Day",
-            )
-          }
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+          //          if (competition!!.endDate != null) {
+          //            Text("The competition will finish on ${competition!!.endDate}.")
+          //          }
+          //          Text("Try to use ${competition!!.apps.map(App::displayName).joinToString(",
+          // ")} less.")
+          //          if (competition!!.prize.isNotEmpty()) {
+          //            Text("The winner will receive ${competition!!.prize}!")
+          //          }
         }
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(0.dp, 16.dp, 0.dp, 8.dp)) {
+              Button(
+                  onClick = {
+                    val calendar = Calendar.getInstance()
+                    calendar.time = shownDay
+                    calendar.add(Calendar.DAY_OF_MONTH, -1)
+                    shownDay = calendar.time
+                  },
+                  shape = CircleShape,
+                  modifier = Modifier.size(36.dp),
+                  contentPadding = PaddingValues(0.dp), // avoid the little icon
+              ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Previous Day",
+                )
+              }
+              Text(
+                  if (isToday) "Today"
+                  else SimpleDateFormat("EEEE d MMMM yyyy", Locale.US).format(shownDay),
+                  style = MaterialTheme.typography.titleMedium,
+                  modifier = Modifier.width(256.dp),
+                  textAlign = TextAlign.Center)
+
+              Button(
+                  enabled = !isToday,
+                  onClick = {
+                    val calendar = Calendar.getInstance()
+                    calendar.time = shownDay
+                    calendar.add(Calendar.DAY_OF_MONTH, 1)
+                    shownDay = calendar.time
+                  },
+                  shape = CircleShape,
+                  modifier = Modifier.size(36.dp),
+                  contentPadding = PaddingValues(0.dp), // avoid the little icon
+              ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = "Next Day",
+                )
+              }
+            }
         LeaderboardView(competition!!, user.id, showEditNameDialog, shownDay, isToday)
       }
     }
