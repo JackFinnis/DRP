@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.ListenerRegistration
+import drp.screentime.firestore.App
 import drp.screentime.firestore.Collections
 import drp.screentime.firestore.Competition
 import drp.screentime.firestore.FirestoreManager
@@ -111,15 +112,8 @@ fun CompetitionView(user: User, competitionId: String) {
         },
     ) { contentPadding ->
       Column(modifier = Modifier.padding(contentPadding)) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-          //          if (competition!!.endDate != null) {
-          //            Text("The competition will finish on ${competition!!.endDate}.")
-          //          }
-          //          Text("Try to use ${competition!!.apps.map(App::displayName).joinToString(",
-          // ")} less.")
-          //          if (competition!!.prize.isNotEmpty()) {
-          //            Text("The winner will receive ${competition!!.prize}!")
-          //          }
+        if (competition!!.apps.isNotEmpty()) {
+          Text("Time using ${competition!!.apps.map(App::displayName).joinToString(", ")}", modifier = Modifier.padding(horizontal = 16.dp))
         }
         Row(
             horizontalArrangement = Arrangement.Center,

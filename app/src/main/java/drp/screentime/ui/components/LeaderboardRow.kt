@@ -75,7 +75,8 @@ fun LeaderboardRow(
       isToday &&
           myUserId != user.id &&
           user.currentApp != null &&
-          competition.apps.map(App::packageName).contains(user.currentPackage)
+          (competition.apps.map(App::packageName).contains(user.currentPackage) ||
+              competition.apps.isEmpty())
 
   LaunchedEffect(startTime) {
     while (true) { // isActive is true as long as the coroutine is active
@@ -170,7 +171,7 @@ fun LeaderboardRow(
               style = MaterialTheme.typography.bodyMedium,
               modifier = Modifier.weight(1f).fillMaxWidth(),
           )
-          Button(onClick = { showPokeAlert = true }) { Text("Poke") }
+          Button(onClick = { showPokeAlert = true }) { Text("Nudge") }
         }
       }
     }

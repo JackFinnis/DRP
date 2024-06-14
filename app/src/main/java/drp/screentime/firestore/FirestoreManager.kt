@@ -124,14 +124,11 @@ object FirestoreManager {
   fun createAndJoinCompetition(
       userId: String,
       apps: List<App>,
-      prize: String,
-      days: Int,
       context: Context,
       onComplete: (Boolean) -> Unit
   ) {
     val competitionId = getId()
-    val endDate = if (days == 0) null else Date(System.currentTimeMillis() + days * 24 * 60 * 60 * 1000)
-    val competition = Competition(generateInviteCode(), apps, prize, endDate)
+    val competition = Competition(generateInviteCode(), apps)
     setDocument(Collections.COMPETITIONS, competitionId, competition) { success ->
       if (!success) {
         onComplete(false)
