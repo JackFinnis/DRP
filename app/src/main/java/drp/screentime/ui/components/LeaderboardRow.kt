@@ -48,8 +48,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.functions
-import drp.screentime.firestore.App
-import drp.screentime.firestore.Competition
 import drp.screentime.firestore.User
 import drp.screentime.util.formatDuration
 import kotlinx.coroutines.delay
@@ -62,8 +60,7 @@ fun LeaderboardRow(
     score: Long,
     isToday: Boolean,
     myUserId: String,
-    showEditNameAlert: MutableState<Boolean>,
-    competition: Competition
+    showEditNameAlert: MutableState<Boolean>
 ) {
   val startTime = user.currentAppSince?.seconds ?: 0
 
@@ -71,12 +68,7 @@ fun LeaderboardRow(
   var time by remember { mutableLongStateOf(0L) }
   var pokeMessage by remember { mutableStateOf("") }
   var showPokeAlert by remember { mutableStateOf(false) }
-  val pokable =
-      isToday &&
-          myUserId != user.id &&
-          user.currentApp != null &&
-          (competition.apps.map(App::packageName).contains(user.currentPackage) ||
-              competition.apps.isEmpty())
+  val pokable = isToday && myUserId != user.id && user.currentApp != null
 
   LaunchedEffect(startTime) {
     while (true) { // isActive is true as long as the coroutine is active

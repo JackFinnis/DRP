@@ -66,8 +66,7 @@ fun LeaderboardView(
                 score = user.first,
                 isToday = dataIsToday,
                 myUserId = userId,
-                showEditNameAlert = showEditNameAlert,
-                competition = competition)
+                showEditNameAlert = showEditNameAlert)
           }
         }
       }

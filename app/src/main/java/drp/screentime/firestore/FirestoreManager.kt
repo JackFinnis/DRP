@@ -1,12 +1,10 @@
 package drp.screentime.firestore
 
-import android.content.Context
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import drp.screentime.firestore.Document.Companion.FIELD_LAST_UPDATED
 import drp.screentime.notification.MessagingService
-import drp.screentime.storage.StorageManager
 import drp.screentime.usage.AppLiveUsageInfo
 import drp.screentime.util.generateInviteCode
 import drp.screentime.util.generateUserName
@@ -68,18 +66,10 @@ object FirestoreManager {
   private fun setUserCompetition(
       userId: String,
       competitionId: String,
-      context: Context,
       onComplete: (Boolean) -> Unit
   ) {
     updateDocument(
         Collections.USERS, userId, mapOf(User::competitionId.name to competitionId), onComplete)
-    getDocument<Competition>(Collections.COMPETITIONS, competitionId) { competition ->
-      StorageManager(context)
-          .preferences
-          .edit()
-          .putStringSet(StorageManager.Key.APPS.name, competition?.apps?.map(App::name)?.toSet())
-          .apply()
-    }
   }
 
   fun addLeaderboardListener(
@@ -109,31 +99,28 @@ object FirestoreManager {
   fun joinCompetition(
       userId: String,
       inviteCode: String,
-      context: Context,
       onComplete: (Boolean) -> Unit
   ) {
     getCompetitionIdFromInviteCode(inviteCode) { competitionId ->
       if (competitionId == null) {
         onComplete(false)
       } else {
-        setUserCompetition(userId, competitionId, context, onComplete)
+        setUserCompetition(userId, competitionId, onComplete)
       }
     }
   }
 
   fun createAndJoinCompetition(
       userId: String,
-      apps: List<App>,
-      context: Context,
       onComplete: (Boolean) -> Unit
   ) {
     val competitionId = getId()
-    val competition = Competition(generateInviteCode(), apps)
+    val competition = Competition(generateInviteCode())
     setDocument(Collections.COMPETITIONS, competitionId, competition) { success ->
       if (!success) {
         onComplete(false)
       } else {
-        setUserCompetition(userId, competitionId, context, onComplete)
+        setUserCompetition(userId, competitionId, onComplete)
       }
     }
   }
