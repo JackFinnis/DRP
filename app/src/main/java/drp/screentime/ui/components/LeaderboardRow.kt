@@ -185,7 +185,7 @@ fun LeaderboardRow(
                             "message" to pokeMessage,
                         ))
                     .addOnFailureListener {
-                      Log.e("Leaderboard", "Failed to poke user", it)
+                      Log.e("Leaderboard", "Failed to nudge user", it)
                       showPokeAlert = false
                     }
                 // TODO: remove once logging finished=
@@ -208,7 +208,7 @@ fun LeaderboardRow(
                 showPokeAlert = false
               },
           ) {
-            Text("Poke")
+            Text("Nudge")
           }
         },
         dismissButton = { TextButton(onClick = { showPokeAlert = false }) { Text("Cancel") } },
@@ -216,10 +216,10 @@ fun LeaderboardRow(
         icon = {
           Icon(
               imageVector = Icons.Default.TouchApp,
-              contentDescription = "Poke",
+              contentDescription = "Nudge",
           )
         },
-        title = { Text("Poke ${user.name}?") },
+        title = { Text("Nudge ${user.name}?") },
         text = {
           Column {
             Text(
@@ -245,7 +245,7 @@ fun LeaderboardRow(
             if (!pokable) {
               Spacer(Modifier.height(16.dp))
               Text(
-                  "${user.name} is no longer using an app and cannot be poked.",
+                  "${user.name} is no longer using an app and cannot be nudged.",
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.error)
             }
