@@ -46,7 +46,7 @@ class DataUploadService : Service() {
     private const val CHANNEL_ID = "DataUploadService"
 
     /** Starts the service. */
-    fun startService(context: android.content.Context) {
+    fun startService(context: Context) {
       val startIntent = Intent(context, DataUploadService::class.java)
       if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
         context.startForegroundService(startIntent)

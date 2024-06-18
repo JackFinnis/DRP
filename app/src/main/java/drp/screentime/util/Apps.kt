@@ -46,10 +46,6 @@ fun PackageManager.getHomeScreenLaunchers(): List<String> {
   return homeApps.map { it.activityInfo.packageName }
 }
 
-fun PackageManager.isTrackedApp(packageName: String): Boolean {
-  return !isSystemApp(packageName) && !getHomeScreenLaunchers().contains(packageName)
-}
-
 fun PackageManager.getAppSignatureHash(packageName: String): Int {
   return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
     val sig = this.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo

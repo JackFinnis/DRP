@@ -152,7 +152,7 @@ object FirestoreManager {
     }
   }
 
-  fun <T : Any> setDocument(
+  private fun <T : Any> setDocument(
       collection: String,
       documentId: String,
       data: T,
@@ -165,15 +165,4 @@ object FirestoreManager {
         .addOnFailureListener { onComplete(false) }
   }
 
-  inline fun <reified T> getDocument(
-      collection: String,
-      documentId: String,
-      noinline onResult: (T?) -> Unit
-  ) {
-    db.collection(collection)
-        .document(documentId)
-        .get()
-        .addOnSuccessListener { document -> onResult(document.toObject(T::class.java)) }
-        .addOnFailureListener { onResult(null) }
-  }
 }

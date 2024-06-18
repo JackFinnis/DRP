@@ -1,12 +1,10 @@
-package com.example.compose
+package drp.screentime.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import com.example.ui.theme.AppTypography
-import drp.screentime.ui.theme.AppShapes
 
 private val lightScheme =
     lightColorScheme(

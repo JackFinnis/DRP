@@ -7,7 +7,8 @@ import com.google.firebase.Timestamp
 data class User(
     val name: String = "",
     val previousScores: Map<String, Long> = mapOf(),
-    val score: Long = 0, val fcmToken: String? = null,
+    val score: Long = 0,
+    val fcmToken: String? = null,
     val competitionId: String? = null,
     val currentPackage: String? = null,
     val currentApp: String? = null,

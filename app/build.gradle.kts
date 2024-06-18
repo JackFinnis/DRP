@@ -49,39 +49,21 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.firebase.firestore.ktx)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.material.icons.extended)
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Image loading library
-    implementation(libs.coil.compose)
-
-    // Firebase
+    implementation(libs.firebase.firestore.ktx)
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging.ktx)
     implementation(libs.firebase.functions.ktx)
-
-    // Saving user preferences
-    implementation(libs.androidx.datastore.preferences)
-
-    // AndroidX work manager
-    implementation(libs.androidx.work.runtime.ktx)
-
-    // All of the Material Design Icons
-    implementation(libs.androidx.material.icons.extended)
 }

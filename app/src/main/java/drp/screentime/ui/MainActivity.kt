@@ -15,13 +15,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.example.compose.AppTheme
 import drp.screentime.App
 import drp.screentime.firestore.FirestoreManager
 import drp.screentime.storage.DataStoreManager
 import drp.screentime.ui.components.LoadingView
 import drp.screentime.ui.components.PermissionsView
 import drp.screentime.ui.components.UserView
+import drp.screentime.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
